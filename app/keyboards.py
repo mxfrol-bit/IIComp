@@ -1,0 +1,73 @@
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+from app.persona import AGE_RANGES, BODY, HAIR, STYLE
+from app.presets import PRESETS
+
+
+def age_gate_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Мне 18+", callback_data="age:yes")],
+        [InlineKeyboardButton(text="❌ Мне меньше 18", callback_data="age:no")],
+    ])
+
+
+def main_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📺 Сериал",            callback_data="story:home")],
+        [InlineKeyboardButton(text="✨ Создать персонажа", callback_data="char:new")],
+        [InlineKeyboardButton(text="📸 Мои персонажи",     callback_data="char:list")],
+        [InlineKeyboardButton(text="💎 Подписка",          callback_data="billing:menu")],
+        [InlineKeyboardButton(text="ℹ️ Баланс",             callback_data="balance")],
+    ])
+
+
+def _grid(items: dict, cb_prefix: str, cols: int = 2) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for key, (label, _) in items.items():
+        kb.button(text=label, callback_data=f"{cb_prefix}:{key}")
+    kb.adjust(cols)
+    return kb.as_markup()
+
+
+def age_kb() -> InlineKeyboardMarkup:
+    return _grid(AGE_RANGES, "persona_age", cols=3)
+
+
+def hair_kb() -> InlineKeyboardMarkup:
+    return _grid(HAIR, "persona_hair", cols=2)
+
+
+def body_kb() -> InlineKeyboardMarkup:
+    return _grid(BODY, "persona_body", cols=2)
+
+
+def style_kb() -> InlineKeyboardMarkup:
+    return _grid(STYLE, "persona_style", cols=2)
+
+
+def characters_kb(characters: list[dict]) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for c in characters:
+        kb.button(text=f"💕 {c['name']}", callback_data=f"char:open:{c['id']}")
+    kb.button(text="➕ Новый", callback_data="char:new")
+    kb.button(text="◀ Меню",  callback_data="menu")
+    kb.adjust(1)
+    return kb.as_markup()
+
+
+def presets_kb(character_id: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for key, preset in PRESETS.items():
+        kb.button(text=preset["label"], callback_data=f"gen:{character_id}:{key}")
+    kb.button(text="◀ Назад", callback_data="char:list")
+    kb.adjust(2)
+    return kb.as_markup()
+
+
+def billing_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⭐ Pro — 100 фото/день",     callback_data="billing:buy:pro")],
+        [InlineKeyboardButton(text="💎 Premium — без лимита",    callback_data="billing:buy:premium")],
+        [InlineKeyboardButton(text="◀ Меню",                     callback_data="menu")],
+    ])

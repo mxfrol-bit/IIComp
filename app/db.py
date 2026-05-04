@@ -1,0 +1,155 @@
+"""Supabase client + helpers. Service-role key, server-side only."""
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
+
+import httpx
+from supabase import Client, create_client
+
+from app.config import settings
+
+supabase: Client = create_client(settings.supabase_url, settings.supabase_service_key)
+
+
+# ---------- Users ----------
+
+def get_or_create_user(tg_id: int, tg_username: Optional[str] = None) -> dict:
+    res = supabase.table("users").select("*").eq("tg_id", tg_id).execute()
+    if res.data:
+        return res.data[0]
+
+    inserted = supabase.table("users").insert({
+        "tg_id": tg_id,
+        "tg_username": tg_username,
+        "credits": settings.free_daily_credits,
+    }).execute()
+    return inserted.data[0]
+
+
+def confirm_age(user_id: int) -> None:
+    supabase.table("users").update({"age_confirmed": True}).eq("id", user_id).execute()
+
+
+def refresh_daily_credits(user: dict) -> dict:
+    """Reset credits if reset window passed."""
+    reset_at_str = user.get("credits_reset_at")
+    if not reset_at_str:
+        return user
+    reset_at = datetime.fromisoformat(reset_at_str.replace("Z", "+00:00"))
+    if datetime.now(timezone.utc) < reset_at:
+        return user
+
+    daily = settings.pro_daily_credits if user["tier"] in ("pro", "premium") else settings.free_daily_credits
+    new_reset = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    updated = supabase.table("users").update({
+        "credits": daily,
+        "credits_reset_at": new_reset,
+    }).eq("id", user["id"]).execute()
+
+    supabase.table("credits_ledger").insert({
+        "user_id": user["id"],
+        "delta": daily,
+        "reason": "daily_grant",
+    }).execute()
+    return updated.data[0]
+
+
+def spend_credit(user_id: int, reason: str = "generation") -> bool:
+    """Atomic-ish decrement. Returns False if no credits."""
+    user = supabase.table("users").select("credits").eq("id", user_id).execute().data[0]
+    if user["credits"] <= 0:
+        return False
+    supabase.table("users").update({"credits": user["credits"] - 1}).eq("id", user_id).execute()
+    supabase.table("credits_ledger").insert({
+        "user_id": user_id,
+        "delta": -1,
+        "reason": reason,
+    }).execute()
+    return True
+
+
+def grant_credits(user_id: int, amount: int, reason: str, meta: Optional[dict] = None) -> None:
+    user = supabase.table("users").select("credits").eq("id", user_id).execute().data[0]
+    supabase.table("users").update({"credits": user["credits"] + amount}).eq("id", user_id).execute()
+    supabase.table("credits_ledger").insert({
+        "user_id": user_id,
+        "delta": amount,
+        "reason": reason,
+        "meta": meta or {},
+    }).execute()
+
+
+def upgrade_tier(user_id: int, tier: str, days: int = 30) -> None:
+    until = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+    supabase.table("users").update({"tier": tier, "tier_until": until}).eq("id", user_id).execute()
+
+
+# ---------- Characters ----------
+
+def create_character(user_id: int, name: str, persona: dict, seed: int) -> dict:
+    res = supabase.table("characters").insert({
+        "user_id": user_id,
+        "name": name,
+        "persona": persona,
+        "seed": seed,
+    }).execute()
+    return res.data[0]
+
+
+def get_user_characters(user_id: int) -> list[dict]:
+    res = supabase.table("characters").select("*").eq("user_id", user_id).order("created_at").execute()
+    return res.data
+
+
+def get_character(character_id: int) -> Optional[dict]:
+    res = supabase.table("characters").select("*").eq("id", character_id).execute()
+    return res.data[0] if res.data else None
+
+
+def set_character_reference(character_id: int, image_url: str) -> None:
+    supabase.table("characters").update({"reference_url": image_url}).eq("id", character_id).execute()
+
+
+# ---------- Generations ----------
+
+def create_generation(user_id: int, character_id: int, preset_key: str, prompt: str) -> dict:
+    res = supabase.table("generations").insert({
+        "user_id": user_id,
+        "character_id": character_id,
+        "preset_key": preset_key,
+        "prompt": prompt,
+    }).execute()
+    return res.data[0]
+
+
+def update_generation(gen_id: int, **fields: Any) -> None:
+    supabase.table("generations").update(fields).eq("id", gen_id).execute()
+
+
+# ---------- Storage ----------
+
+async def upload_image_from_url(remote_url: str, dest_path: str) -> str:
+    """Download image from Replicate and upload to Supabase Storage. Returns public URL."""
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(remote_url)
+        resp.raise_for_status()
+        data = resp.content
+
+    supabase.storage.from_("generations").upload(
+        dest_path, data,
+        file_options={"content-type": "image/jpeg", "upsert": "true"},
+    )
+    return supabase.storage.from_("generations").get_public_url(dest_path)
+
+
+# ---------- Payments ----------
+
+def record_payment(user_id: int, telegram_payment_id: str, provider_payment_id: str,
+                   amount_stars: int, tier: str) -> None:
+    supabase.table("payments").insert({
+        "user_id": user_id,
+        "telegram_payment_id": telegram_payment_id,
+        "provider_payment_id": provider_payment_id,
+        "amount_stars": amount_stars,
+        "tier": tier,
+        "status": "completed",
+    }).execute()

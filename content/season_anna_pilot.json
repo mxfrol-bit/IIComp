@@ -1,0 +1,83 @@
+{
+  "season": {
+    "slug": "anna_s1",
+    "title": "Анна. Сезон 1",
+    "description": "Случайная встреча в кафе превращается в историю, которая меняет твою осень.",
+    "is_active": true
+  },
+  "character": {
+    "slug": "anna",
+    "name": "Анна",
+    "bio": "26, дизайнер интерьеров, переехала в город месяц назад. Любит кофе, винил, дождливые вечера.",
+    "persona": {
+      "age_desc": "26 years old",
+      "hair_desc": "long brown hair, soft waves",
+      "body_desc": "slim build, average height",
+      "style_desc": "minimalist style, beige sweaters, vintage jeans",
+      "face_desc": "warm brown eyes, light freckles, gentle smile"
+    },
+    "master_seed": 1714283
+  },
+  "episodes": [
+    {
+      "number": 1,
+      "title": "Кафе на углу",
+      "hook_text": "Среда. Дождь. Ты заходишь в кафе, чтобы переждать. И всё меняется.",
+      "is_premium": false,
+      "unlock_after_hours": 24,
+      "beats_json": {
+        "start_beat": "b1",
+        "end_beats": ["b8"],
+        "beats": {
+          "b1": {
+            "image_prompt_hint": "young woman in a cozy cafe by the window, holding a coffee mug, looking out at the rain, soft afternoon light, beige sweater",
+            "image_url": "",
+            "text": "Дождь. Ты заходишь в кафе на углу — переждать.\n\nЗа столиком у окна — она. Светло-карие глаза, бежевый свитер, чашка в руках. Она смотрит на дождь и не замечает тебя сразу.",
+            "next": "b2"
+          },
+          "b2": {
+            "image_prompt_hint": "same woman noticing someone, slight smile, looking up from her cup, candid moment",
+            "image_url": "",
+            "text": "Бариста зовёт твой заказ. Ты оборачиваешься — и встречаешься с ней взглядом.\n\nОна улыбается уголком губ. Не отводит глаз.",
+            "next": "b3"
+          },
+          "b3": {
+            "image_prompt_hint": "woman smiling and laughing softly, sitting at cafe table, holding pencil over notebook, warm daylight",
+            "image_url": "",
+            "text": "У неё на столе — раскрытый блокнот, карандаш, наполовину выпитый кофе.\n\n— Свободно? — спрашиваешь ты, кивнув на стул напротив.\n— Если расскажешь, почему ты насквозь мокрый, — смеётся она.",
+            "next": "b4"
+          },
+          "b4": {
+            "image_prompt_hint": "woman sitting across at small cafe table, leaning forward slightly, engaged in conversation, soft light, intimate framing",
+            "image_url": "",
+            "text": "Её зовут Анна. Дизайнер интерьеров, переехала месяц назад.\n\n— Я ещё никого тут не знаю, — говорит она. — Ну, кроме баристы. Он меня уже в лицо запомнил.\n\nВы говорите час. Потом ещё час. Дождь давно кончился.",
+            "next": "b5"
+          },
+          "b5": {
+            "image_prompt_hint": "woman walking on a wet city street at evening, autumn coat, leaves on pavement, golden hour light, candid",
+            "image_url": "",
+            "text": "Вечер. Вы выходите. Город после дождя — отражения в лужах, фонари, запах мокрых листьев.\n\n— Меня ждут, — говорит она. — Но завтра я снова в этом кафе. Около пяти.\n\nОна не спрашивает, придёшь ли ты.",
+            "next": "b6"
+          },
+          "b6": {
+            "image_prompt_hint": "woman in a cafe again the next day, looking at phone, anticipating, late afternoon light",
+            "image_url": "",
+            "text": "Четверг. Без пяти пять. Ты у двери кафе.\n\nОна уже там. Сидит за тем же столиком. Смотрит на телефон. Поднимает глаза, когда колокольчик над дверью звякает.\n\nИ улыбается так, будто ждала именно тебя.",
+            "next": "b7"
+          },
+          "b7": {
+            "image_prompt_hint": "woman laughing in a cafe, head tilted slightly, hand near her face, warm cozy atmosphere, golden hour",
+            "image_url": "",
+            "text": "— Знаешь, — говорит она, помешивая кофе, — я почти не верила, что ты придёшь.\n— Почему?\n— Потому что обычно такие истории заканчиваются в первый день.\n\nОна смотрит в чашку. Потом снова на тебя.\n— Может, эта — не такая.",
+            "next": "b8"
+          },
+          "b8": {
+            "image_prompt_hint": "woman standing outside cafe at dusk, looking back over shoulder with small smile, city lights starting, cinematic",
+            "image_url": "",
+            "text": "Вы выходите на улицу. Уже почти темно.\n\n— Завтра суббота, — говорит она. — Я буду гулять в парке. Около полудня.\n\nОна делает шаг. Останавливается. Поворачивается.\n— Если хочешь — найди меня."
+          }
+        }
+      }
+    }
+  ]
+}
