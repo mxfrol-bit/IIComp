@@ -109,6 +109,22 @@ def set_character_reference(character_id: int, image_url: str) -> None:
     supabase.table("characters").update({"reference_url": image_url}).eq("id", character_id).execute()
 
 
+def set_character_avatar(character_id: int, avatar_url: str) -> None:
+    """Set character avatar (first generated photo). Idempotent — only sets if empty."""
+    res = supabase.table("characters").select("avatar_url").eq("id", character_id).execute()
+    if res.data and not res.data[0].get("avatar_url"):
+        supabase.table("characters").update({"avatar_url": avatar_url}).eq("id", character_id).execute()
+
+
+def delete_character(character_id: int, user_id: int) -> bool:
+    """Delete a character. Returns True if deleted, False if not owned by user."""
+    res = supabase.table("characters").select("user_id").eq("id", character_id).execute()
+    if not res.data or res.data[0]["user_id"] != user_id:
+        return False
+    supabase.table("characters").delete().eq("id", character_id).execute()
+    return True
+
+
 # ---------- Generations ----------
 
 def create_generation(user_id: int, character_id: int, preset_key: str, prompt: str) -> dict:
@@ -123,6 +139,71 @@ def create_generation(user_id: int, character_id: int, preset_key: str, prompt: 
 
 def update_generation(gen_id: int, **fields: Any) -> None:
     supabase.table("generations").update(fields).eq("id", gen_id).execute()
+
+
+def get_recent_generations(user_id: int, limit: int = 10) -> list[dict]:
+    """Fetch last N successful generations for the user."""
+    res = supabase.table("generations").select("*") \
+        .eq("user_id", user_id).eq("status", "done") \
+        .order("created_at", desc=True).limit(limit).execute()
+    return res.data
+
+
+# ---------- Referrals ----------
+
+def get_referrer(user_id: int) -> Optional[dict]:
+    res = supabase.table("referrals").select("*").eq("referred_id", user_id).execute()
+    return res.data[0] if res.data else None
+
+
+def create_referral(referrer_id: int, referred_id: int) -> Optional[dict]:
+    """Create referral link. No-op if user already has a referrer or refers themselves."""
+    if referrer_id == referred_id:
+        return None
+    if get_referrer(referred_id):
+        return None
+    try:
+        res = supabase.table("referrals").insert({
+            "referrer_id": referrer_id,
+            "referred_id": referred_id,
+        }).execute()
+        return res.data[0]
+    except Exception:
+        return None
+
+
+def grant_referral_bonus(referred_id: int, bonus_credits: int = 5) -> Optional[int]:
+    """Give bonus credits to the referrer when the referred user does their first action.
+    Returns referrer_id if granted, None otherwise."""
+    referral = get_referrer(referred_id)
+    if not referral or referral.get("bonus_granted"):
+        return None
+
+    referrer_id = referral["referrer_id"]
+    grant_credits(referrer_id, bonus_credits, "referral_bonus",
+                  meta={"referred_user_id": referred_id})
+    supabase.table("referrals").update({"bonus_granted": True}) \
+        .eq("id", referral["id"]).execute()
+    return referrer_id
+
+
+def count_referrals(user_id: int) -> int:
+    res = supabase.table("referrals").select("id", count="exact") \
+        .eq("referrer_id", user_id).execute()
+    return res.count or 0
+
+
+# ---------- Admin ----------
+
+def is_admin(user_id: int) -> bool:
+    res = supabase.table("users").select("is_admin").eq("id", user_id).execute()
+    return bool(res.data and res.data[0].get("is_admin"))
+
+
+def find_user_by_username(username: str) -> Optional[dict]:
+    username = username.lstrip("@")
+    res = supabase.table("users").select("*").eq("tg_username", username).execute()
+    return res.data[0] if res.data else None
 
 
 # ---------- Storage ----------

@@ -15,10 +15,25 @@ def age_gate_kb() -> InlineKeyboardMarkup:
 def main_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📺 Сериал",            callback_data="story:home")],
-        [InlineKeyboardButton(text="✨ Создать персонажа", callback_data="char:new")],
-        [InlineKeyboardButton(text="📸 Мои персонажи",     callback_data="char:list")],
-        [InlineKeyboardButton(text="💎 Подписка",          callback_data="billing:menu")],
-        [InlineKeyboardButton(text="ℹ️ Баланс",             callback_data="balance")],
+        [
+            InlineKeyboardButton(text="✨ Создать",         callback_data="char:new"),
+            InlineKeyboardButton(text="📸 Мои персонажи",  callback_data="char:list"),
+        ],
+        [
+            InlineKeyboardButton(text="🎁 Что нового",      callback_data="recent"),
+            InlineKeyboardButton(text="🤝 Друзья",         callback_data="referral"),
+        ],
+        [
+            InlineKeyboardButton(text="💎 Подписка",        callback_data="billing:menu"),
+            InlineKeyboardButton(text="ℹ️ Баланс",           callback_data="balance"),
+        ],
+        [InlineKeyboardButton(text="❓ Помощь",             callback_data="help")],
+    ])
+
+
+def back_to_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
     ])
 
 
@@ -56,13 +71,38 @@ def characters_kb(characters: list[dict]) -> InlineKeyboardMarkup:
     return kb.as_markup()
 
 
+def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
+    """Shown on character detail card — generate, delete, back."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📸 Сгенерировать фото", callback_data=f"char:scenes:{character_id}")],
+        [InlineKeyboardButton(text="🗑 Удалить",            callback_data=f"char:delete_confirm:{character_id}")],
+        [InlineKeyboardButton(text="◀ Назад",               callback_data="char:list")],
+    ])
+
+
+def delete_confirm_kb(character_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Да, удалить",   callback_data=f"char:delete:{character_id}")],
+        [InlineKeyboardButton(text="◀ Отмена",         callback_data=f"char:open:{character_id}")],
+    ])
+
+
 def presets_kb(character_id: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for key, preset in PRESETS.items():
         kb.button(text=preset["label"], callback_data=f"gen:{character_id}:{key}")
-    kb.button(text="◀ Назад", callback_data="char:list")
+    kb.button(text="◀ К персонажу", callback_data=f"char:open:{character_id}")
     kb.adjust(2)
     return kb.as_markup()
+
+
+def after_generation_kb(character_id: int, preset_key: str) -> InlineKeyboardMarkup:
+    """Shown after a successful generation — reroll, more scenes, back."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Ещё фото в этой сцене", callback_data=f"gen:{character_id}:{preset_key}")],
+        [InlineKeyboardButton(text="🎬 Другая сцена",          callback_data=f"char:scenes:{character_id}")],
+        [InlineKeyboardButton(text="◀ В меню",                  callback_data="menu")],
+    ])
 
 
 def billing_kb() -> InlineKeyboardMarkup:

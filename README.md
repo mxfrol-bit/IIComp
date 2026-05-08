@@ -4,12 +4,41 @@ Telegram bot that delivers an interactive story serial — episode by episode, w
 
 **Stack:** aiogram 3 · fal.ai (Flux + UltraRealistic LoRA) · Supabase · Railway
 
-## What's inside
+## Что внутри
 
-Two product modes coexist:
+Два продуктовых режима coexist:
 
 1. **📺 Story (primary)** — interactive serial. One main heroine, episodes of 6–8 beats each, choices on later episodes, 24-hour cooldowns between episodes, paid early-unlock via Stars. All beat images are **pre-generated** by the operator before release — zero generation cost in runtime.
 2. **✨ Free-form character (secondary)** — user creates their own character, picks scene presets, generates on demand. Burns generation credits per request. Daily limits + Pro/Premium tiers.
+
+## User-facing features
+
+- **18+ age gate** на /start
+- **Создание персонажа** (FSM: имя → возраст → волосы → телосложение → стиль)
+- **Карточка персонажа** с аватаркой (первое фото) и инфо
+- **Удаление персонажа** с подтверждением
+- **30 пресетов сцен** (кафе / прогулка / спортзал / постель / парк и т.д.)
+- **🔄 Рерол сцены** — кнопка под фото для перегенерации с новым seed
+- **🎁 Что нового** — последние 5 фото юзера в одном экране
+- **🤝 Реферальная программа** — t.me/<bot>?start=ref_<id>, +5 фото за каждого приглашённого
+- **💎 Тарифы Pro/Premium** через Telegram Stars (399⭐ / 1490⭐)
+- **📺 Story-режим** с эпизодами, битами, выборами, платными анлоками
+- **❓ /help** с описанием всего функционала
+- **ℹ️ /balance** — быстрый баланс одной командой
+- **🛠 Admin-команды** для управления тестерами и тарифами
+
+## Admin commands
+
+Чтобы стать админом — выполни в Supabase SQL Editor:
+```sql
+update users set is_admin = true where tg_username = 'твой_username';
+```
+
+После этого доступны:
+- `/admin grant <username> <credits>` — выдать кредиты вручную
+- `/admin tier <username> <free|pro|premium>` — сменить тариф на 30 дней
+- `/admin stats` — общая статистика по юзерам и генерациям
+- `/admin makeadmin <username>` — назначить ещё одного админа
 
 ## Quick start
 
@@ -25,6 +54,7 @@ Two product modes coexist:
 # In Supabase SQL Editor, run in order:
 #    supabase/schema.sql
 #    supabase/002_story_engine.sql
+#    supabase/003_features.sql
 # Create Storage bucket "generations" — public read access
 
 # 2. Env
@@ -58,7 +88,7 @@ Long-polling, no webhooks. Single process.
 ## Why fal.ai
 
 - Latency 8–15s vs Replicate's 25–40s — same Flux model, different infra
-- Same `fal-ai/flux-lora` endpoint accepts Civitai LoRA URLs directly
+- Same `fal-ai/flux-lora` endpoint accepts public LoRA URLs (use Hugging Face — Civitai server-side downloads are unreliable from fal's IPs)
 - Pricing per megapixel (~$0.025 for portrait_4_3); comparable to Replicate per-image
 - `enable_safety_checker: True` is on by default — leave it on
 

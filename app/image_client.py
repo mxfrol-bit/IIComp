@@ -18,11 +18,10 @@ os.environ["FAL_KEY"] = settings.fal_key
 
 
 def _lora_url() -> str:
-    url = settings.lora_url
-    if settings.civitai_api_token and "civitai.com" in url:
-        sep = "&" if "?" in url else "?"
-        url = f"{url}{sep}token={settings.civitai_api_token}"
-    return url
+    """Returns the LoRA URL from settings. URL must be a publicly accessible
+    .safetensors file (Hugging Face works; raw Civitai download links don't —
+    fal's servers can't fetch them)."""
+    return settings.lora_url
 
 
 # Map our aspect ratios to fal.ai image_size enum

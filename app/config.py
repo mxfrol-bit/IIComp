@@ -14,9 +14,6 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_service_key: str
 
-    # Optional Civitai token (only if LoRA download becomes gated)
-    civitai_api_token: str = ""
-
     # Tiers
     free_daily_credits: int = 3
     pro_daily_credits: int = 100
@@ -25,9 +22,9 @@ class Settings(BaseSettings):
     pro_price_stars: int = 399
     premium_price_stars: int = 1490
 
-    # Image model & LoRA
+    # Image model & LoRA — overridable via env (LORA_URL, FAL_MODEL, etc.)
     fal_model: str = "fal-ai/flux-lora"
-    lora_url: str = "https://civitai.com/api/download/models/1026423"
+    lora_url: str = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
     lora_scale: float = 0.9
     inference_steps: int = 40
     guidance_scale: float = 2.5
