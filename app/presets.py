@@ -74,43 +74,91 @@ PRESETS: dict[str, dict] = {
         "scene": "completely naked or tiny thong, leg up, touching or spreading pussy, dirty seductive look"
     },
 
-    # ==================== SEX SCENES (18+) ====================
+    # ==================== SEX (жёсткий explicit) ====================
+SEX_TAIL = (
+    "explicit hardcore sex, raw penetration, visible pussy and cock, wet and glistening, "
+    "detailed genitals, deep thrusting, sweaty skin, flushed face, moaning expression, "
+    "ahegao elements, messy hair, intense eye contact or rolled eyes, realistic anatomy, "
+    "cinematic erotic lighting, highly detailed, vulgar dirty atmosphere, raw and unfiltered"
+)
+
+PRESETS.update({
     "sex_doggy": {
         "label": "🔞 Сзади (doggy)",
         "rating": "sex",
-        "scene": "doggy style, taken from behind, back arched, hard pounding, sweaty skin, moaning face"
-    },
-    "sex_riding": {
-        "label": "🔞 Наездница",
-        "rating": "sex",
-        "scene": "cowgirl, riding hard, bouncing, head thrown back in pleasure, explicit penetration"
-    },
-    "sex_missionary": {
-        "label": "🔞 Миссионер",
-        "rating": "sex",
-        "scene": "missionary position, legs spread wide, deep penetration, intense moaning, gripping sheets"
-    },
-    "sex_blowjob": {
-        "label": "🔞 Минет",
-        "rating": "sex",
-        "scene": "on knees giving blowjob, looking up, messy, deepthroat, submissive aroused expression"
+        "scene": (
+            "doggy style sex from behind, woman on all fours or bent over, ass up high, "
+            "back deeply arched, man fucking her hard from behind, hands gripping her hips or waist tightly, "
+            "intense deep penetration, her face in pleasure or ahegao, mouth open moaning, "
+            "hair messy, sweaty skin, explicit and raw doggy style"
+        )
     },
     "sex_from_behind_standing": {
         "label": "🔞 Стоя сзади",
         "rating": "sex",
-        "scene": "standing doggy against wall, hard fucking from behind, hair pulled, dirty expression"
-    },
-    "sex_creampie": {
-        "label": "🔞 Кремпай",
-        "rating": "sex",
-        "scene": "after creampie, cum leaking out, legs spread, satisfied used expression, very explicit"
+        "scene": (
+            "standing sex from behind, woman pressed against the wall or bent forward, "
+            "man thrusting hard into her from behind, her hands flat on the wall, back arched, "
+            "ass pushed back, skirt or clothes pulled down, intense penetration, "
+            "gripping her hair or hips, explicit standing doggy, raw and vulgar"
+        )
     },
     "sex_against_wall": {
         "label": "🔞 У стены",
         "rating": "sex",
-        "scene": "lifted against the wall, legs wrapped, hard deep fucking, intense sex"
+        "scene": (
+            "sex against the wall, woman with back or front against the wall, legs wrapped around him or one leg lifted, "
+            "man fucking her standing up, deep penetration, hands holding her thighs or ass, "
+            "intense thrusting, her head tilted back in pleasure, explicit wall sex, raw and passionate"
+        )
     },
-}
+    "sex_riding": {
+        "label": "🔞 Наездница",
+        "rating": "sex",
+        "scene": (
+            "cowgirl / riding position, woman on top straddling him, riding his cock, "
+            "bouncing up and down, hands on his chest or her own breasts, back arched, "
+            "intense eye contact, moaning face, wet pussy visible, explicit riding sex, "
+            "sweaty bodies, raw and vulgar cowgirl"
+        )
+    },
+    "sex_missionary": {
+        "label": "🔞 Миссионер",
+        "rating": "sex",
+        "scene": (
+            "missionary sex position, woman lying on her back with legs spread wide or wrapped around him, "
+            "man on top thrusting deep, intense penetration, hands holding her wrists or thighs, "
+            "her back arched, moaning loudly, explicit missionary, eye contact, raw and passionate"
+        )
+    },
+    "sex_blowjob": {
+        "label": "🔞 Минет",
+        "rating": "sex",
+        "scene": (
+            "explicit blowjob, woman on her knees or lying down, sucking cock deeply, "
+            "mouth full, saliva dripping, hand stroking, looking up with submissive or aroused eyes, "
+            "messy hair, wet lips, explicit oral sex, vulgar and detailed"
+        )
+    },
+    "sex_creampie": {
+        "label": "🔞 Кримпай",
+        "rating": "sex",
+        "scene": (
+            "creampie sex, man cumming deep inside her, cum leaking out of pussy, "
+            "thrusting during orgasm, her legs shaking or wrapped around him, "
+            "intense pleasure expression, explicit creampie, cum dripping, raw and vulgar finish"
+        )
+    },
+    "sex_reverse_cowgirl": {
+        "label": "🔞 Наездница сзади",
+        "rating": "sex",
+        "scene": (
+            "reverse cowgirl, woman riding on top facing away, ass towards him, "
+            "bouncing on his cock, hands on his legs, back view, explicit penetration from behind while riding, "
+            "sweaty skin, raw and vulgar reverse cowgirl"
+        )
+    },
+})
 
 MODE_TITLES = {
     "safe": "📸 Обычные сцены",
