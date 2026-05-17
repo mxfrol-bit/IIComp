@@ -30,7 +30,7 @@ async def on_generate_video(cb: CallbackQuery):
     if gen.get("video_url"):
         await cb.message.answer_video(
             URLInputFile(gen["video_url"]),
-            caption="🎥 Уже оживляли этот кадр",
+            caption="🎥 Она уже присылала это короткое видео",
             reply_markup=after_video_kb(gen.get("character_id")),
         )
         await cb.answer()
@@ -46,8 +46,8 @@ async def on_generate_video(cb: CallbackQuery):
                 await cb.answer("Не хватило кредитов", show_alert=True)
                 return
 
-    await cb.answer("Оживляю фото…")
-    placeholder = await cb.message.answer("🎥 Оживляю фото в короткое видео. Обычно это дольше фото — подожди немного.")
+    await cb.answer("Она отправляет короткое видео…")
+    placeholder = await cb.message.answer("🎥 Она записывает для тебя короткое видео из этого момента. Это может занять чуть дольше, чем фото…")
     prompt = "subtle realistic movement, slight smile, natural blinking, handheld phone video, romantic but tasteful mood"
     db.update_generation_video(gen_id, status="pending", prompt=prompt)
     try:
@@ -65,7 +65,7 @@ async def on_generate_video(cb: CallbackQuery):
             pass
         await cb.message.answer_video(
             URLInputFile(stored_url),
-            caption="🎥 Фото ожило",
+            caption="🎥 Она прислала тебе короткое видео",
             reply_markup=after_video_kb(gen.get("character_id")),
         )
     except Exception as e:
@@ -73,4 +73,4 @@ async def on_generate_video(cb: CallbackQuery):
         db.update_generation_video(gen_id, status="failed", prompt=prompt)
         if not _has_unlimited(user):
             db.grant_credits(user["id"], cost, "refund_failed_video", {"gen_id": gen_id})
-        await placeholder.edit_text("😞 Видео не получилось. Кредиты вернул. Попробуй другое фото.")
+        await placeholder.edit_text("😞 Видео не отправилось. Кредиты вернул. Попробуй другой момент.")

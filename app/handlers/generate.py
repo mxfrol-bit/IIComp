@@ -85,9 +85,9 @@ async def on_generate(cb: CallbackQuery):
 
     gen = db.create_generation(user["id"], char_id, preset_key, prompt)
 
-    await cb.answer("Генерирую…")
+    await cb.answer("Она готовит момент…")
     placeholder = await cb.message.answer(
-        f"🎨 Создаю фото «{preset['label']}» — обычно 10–15 секунд…"
+        f"{char['name']} набирает…\n\n«Подожди, я хочу показать тебе кое-что.»"
     )
 
     try:
@@ -121,8 +121,8 @@ async def on_generate(cb: CallbackQuery):
         await cb.message.answer_photo(
             URLInputFile(stored_url),
             caption=(
-                f"💕 *{char['name']}* — {preset['label']}\n"
-                f"Осталось фото сегодня: *{remaining}*"
+                f"💌 *{char['name']}* прислала момент: {preset['label']}\n"
+                f"Осталось сегодня: *{remaining}*"
             ),
             parse_mode="Markdown",
             reply_markup=after_generation_kb(char_id, preset_key, gen["id"]),

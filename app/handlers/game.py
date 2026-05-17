@@ -25,7 +25,7 @@ async def _send_first_meeting_photo(cb: CallbackQuery, user: dict, char: dict) -
         return
 
     gen = db.create_generation(user["id"], char["id"], "first_meeting", prompt)
-    placeholder = await cb.message.answer("☕ Готовлю первую сцену встречи…")
+    placeholder = await cb.message.answer("☕ Она уже в кафе. Сейчас пришлёт момент встречи…")
     try:
         image_url = await generate_image(prompt=prompt, seed=random.randint(1, 2_000_000_000))
         dest_path = f"u{user['id']}/c{char['id']}/first_meeting_{int(time.time())}.jpg"
@@ -74,7 +74,7 @@ async def on_game_continue(cb: CallbackQuery):
         chars = db.get_user_characters(user["id"])
         if not chars:
             await cb.message.answer(
-                "Пока истории нет: сначала создай героиню. После создания она сама напишет первой.",
+                "Пока истории нет: сначала создай героиню. После создания она сама напишет первой и пришлёт первый момент.",
                 reply_markup=main_menu_kb(),
             )
         else:
@@ -87,7 +87,7 @@ async def on_game_continue(cb: CallbackQuery):
         f"💕 *Продолжаем историю с {char['name']}*\n\n"
         f"Отношения: *{score}/100*\n\n"
         "Она уже в диалоге. Просто напиши ей обычным сообщением.\n"
-        "Например: «как твой день?», «давай встретимся», «пришли селфи»."
+        "Например: «как ты?», «давай встретимся», «я бы хотел увидеть тебя сейчас»."
     )
     await cb.message.answer(text, reply_markup=chat_home_kb(char["id"]), parse_mode="Markdown")
     await cb.answer()
@@ -104,7 +104,7 @@ async def on_intro_reply(cb: CallbackQuery):
     db.set_active_character(user["id"], char_id, enabled=True)
     msg = first_companion_message(char)
     await cb.message.answer(
-        f"💬 *{char['name']} пишет первой:*\n\n{msg}\n\nОтветь ей обычным сообщением — дальше диалог пойдёт как игра.",
+        f"💬 *{char['name']} пишет первой:*\n\n{msg}\n\nОтветь ей обычным сообщением — дальше она будет вести диалог сама.",
         reply_markup=chat_home_kb(char_id),
         parse_mode="Markdown",
     )
@@ -119,7 +119,7 @@ async def on_first_meeting(cb: CallbackQuery):
     if not char or char["user_id"] != user["id"]:
         await cb.answer("Персонаж не найден", show_alert=True)
         return
-    await cb.answer("Запускаю первую встречу…")
+    await cb.answer("Она уже ждёт тебя…")
     await _send_first_meeting_photo(cb, user, char)
 
 
@@ -136,7 +136,7 @@ async def on_first_meeting_answer(cb: CallbackQuery):
     user_text = answer_text(choice)
     db.set_active_character(user["id"], char_id, enabled=True)
     db.add_chat_message(user["id"], char_id, "user", user_text, event_type="first_meeting_choice")
-    score = db.update_relationship(user["id"], 4 if choice in ("bold", "funny") else 3)
+    score = db.update_relationship(user["id"], 8 if choice in ("bold", "funny") else 5)
     history = db.get_chat_history(user["id"], char_id, limit=12)
     reply = await generate_companion_reply(
         user=user,

@@ -8,8 +8,8 @@ from __future__ import annotations
 from app.persona import build_base_prompt
 from app.presets import BASE_TRIGGERS, QUALITY_TAIL, ROMANTIC_TAIL
 
-SOFT18_RELATIONSHIP_MIN = 25
-ROMANTIC_RELATIONSHIP_MIN = 5
+SOFT18_RELATIONSHIP_MIN = 8
+ROMANTIC_RELATIONSHIP_MIN = 2
 
 
 def persona_label(character: dict) -> str:
@@ -26,9 +26,9 @@ def build_intro_avatar_prompt(character: dict) -> str:
     persona_base = build_base_prompt(character["persona"])
     return (
         f"{BASE_TRIGGERS}, {persona_base}, "
-        "first profile portrait for an interactive romance game, natural phone portrait, "
+        "first private profile photo in an interactive romance story, natural phone portrait, "
         "looking into the camera, warm curious smile, clean cozy background, "
-        "tasteful stylish outfit, non-explicit, no nudity, character introduction image, "
+        "tasteful stylish outfit, non-explicit, no nudity, first message mood, "
         f"{QUALITY_TAIL}"
     )
 
@@ -49,9 +49,9 @@ def first_companion_message(character: dict) -> str:
     name = character.get("name") or "она"
     return (
         f"Привет… я {name}. Кажется, мы только что совпали в этой истории 🙂\n\n"
-        "Я не буду сразу притворяться, что мы давно знакомы. Давай начнём нормально: "
+        "Не будем делать вид, что мы давно знакомы. Но мне правда интересно, какой ты: "
         "ты видишь моё первое фото, а я хочу понять, какой ты.\n\n"
-        "С чего начнём — познакомимся в чате или представим нашу первую встречу?"
+        "С чего начнём — поговорим здесь или представим нашу первую встречу?"
     )
 
 
@@ -68,8 +68,8 @@ def first_meeting_text(character: dict) -> str:
 def answer_text(choice: str) -> str:
     options = {
         "calm": "Я спокойно улыбаюсь и говорю: «Привет. Просто не хотел испортить момент.»",
-        "bold": "Я улыбаюсь смелее: «Если честно, я ждал, пока ты первая заметишь.»",
-        "funny": "Я смеюсь: «Я репетировал эффектное появление, но кофе победил.»",
-        "photo": "Я говорю: «У тебя такой кадр получился… можешь прислать ещё одно фото?»",
+        "bold": "Я смотрю ей в глаза: «Если честно, ты слишком притягательная, чтобы просто пройти мимо.»",
+        "funny": "Я улыбаюсь: «Я хотел выглядеть уверенно, но ты сбила меня с роли.»",
+        "photo": "Я говорю: «Мне нравится, как ты смотришь. Покажешь мне ещё один момент?»",
     }
     return options.get(choice, options["calm"])

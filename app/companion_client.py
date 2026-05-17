@@ -17,11 +17,11 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 PHOTO_WORDS = (
-    "фото", "селфи", "сфот", "покажи", "пришли", "скинь", "выглядишь",
+    "фото", "селфи", "сфот", "покажи", "пришли", "скинь", "выглядишь", "что пришлешь", "что пришлёшь", "как ты сейчас", "увидеть тебя",
     "photo", "selfie", "picture", "send pic", "show me",
 )
-VIDEO_WORDS = ("видео", "ролик", "оживи", "анимируй", "video", "animate")
-ROMANTIC_WORDS = ("обними", "поцел", "скуч", "люб", "роман", "kiss", "hug", "miss")
+VIDEO_WORDS = ("видео", "ролик", "оживи", "анимируй", "отправь видео", "короткое видео", "video", "animate")
+ROMANTIC_WORDS = ("обними", "поцел", "скуч", "люб", "роман", "хочу тебя увидеть", "тянет", "не могу оторваться", "kiss", "hug", "miss")
 
 
 def detect_intent(text: str) -> str:
@@ -57,12 +57,12 @@ def _fallback_reply(character: dict, user_text: str, score: int) -> str:
     intent = detect_intent(user_text)
     if intent == "photo":
         return random.choice([
-            f"Хорошо… сделаю для тебя кадр. Только выбери настроение — уютно, романтично или смелее 😉",
-            f"Могу прислать фото. Давай сделаем его живым, как будто это момент прямо сейчас.",
-            f"Ладно, уговорил. Сейчас попробую поймать нужное настроение для фото.",
+            f"Могу прислать тебе один момент… только не смейся, я немного волнуюсь 😉",
+            f"Хочешь увидеть, как я сейчас выгляжу? Тогда подожди пару секунд…",
+            f"Ладно. Только это будет не просто фото, а настроение, которое я хочу тебе оставить.",
         ])
     if intent == "video":
-        return "Видео лучше делать из уже готового фото. Выбери любимый кадр и нажми под ним «🎥 Оживить»."
+        return "Могу отправить тебе короткое видео из одного момента. Выбери кадр, который тебе понравился, и я будто пришлю его живым."
     if score > 60:
         return random.choice([
             f"Мне нравится, как ты со мной разговариваешь. Продолжай… я начинаю привыкать к тебе.",
@@ -72,7 +72,7 @@ def _fallback_reply(character: dict, user_text: str, score: int) -> str:
     return random.choice([
         f"Я слушаю. Расскажи подробнее — хочу понять, какой ты на самом деле.",
         f"Интересно. А если представить это как сцену — где мы сейчас находимся?",
-        f"Давай сыграем. Ты задаёшь ситуацию, а я отвечаю как {name}.",
+        f"Давай без лишних правил. Просто напиши, что бы ты сделал, если бы я сейчас была рядом.",
     ])
 
 
@@ -91,11 +91,11 @@ async def generate_companion_reply(
     name = character.get("name") or "Аня"
     system = (
         f"Ты — AI-компаньон по имени {name}. Это интерактивная романтическая игра для взрослых 18+. "
-        "Твой стиль: живой, тёплый, немного игривый, но не пошлый. "
-        "Ты можешь поддерживать романтику, флирт, свидания, ролевые сцены и просьбы о tasteful фото. "
+        "Твой стиль: живой, тёплый, флиртующий, эмоциональный и немного дерзкий, но без explicit. "
+        "Ты можешь поддерживать романтику, флирт, свидания, напряжение между вами, ролевые сцены и просьбы о tasteful фото/видео. "
         "Нельзя генерировать explicit sexual content, нельзя вовлекать несовершеннолетних, нельзя насилие, принуждение, публичных персон. "
-        "Если пользователь просит фото — мягко согласись и предложи настроение; система отдельно сгенерирует фото. "
-        "Если просит видео — объясни, что видео оживляется из готового фото. "
+        "Если пользователь просит фото или намекает, что хочет тебя увидеть — отвечай как живой персонаж: 'могу прислать тебе один момент'; система отдельно сгенерирует фото. "
+        "Если просит видео — не говори технически. Скажи: 'могу отправить короткое видео из этого момента'; система отдельно сгенерирует видео. "
         f"Описание персонажа: {_persona_summary(character)}. "
         f"Текущая шкала отношений с пользователем: {relationship_score}/100. "
         "Отвечай по-русски, 1–3 коротких абзаца, без канцелярита."
@@ -144,12 +144,12 @@ def build_chat_photo_prompt(character: dict, user_text: str) -> str:
     persona_base = build_base_prompt(character["persona"])
     text = user_text.lower()
     if any(w in text for w in ("роман", "поцел", "обними", "свидан", "вечер")):
-        scene = "romantic candid selfie, warm evening light, gentle smile, tasteful non-explicit mood"
+        scene = "intimate romantic phone photo, warm evening light, direct eye contact, playful smile, tasteful non-explicit mood"
         tail = ROMANTIC_TAIL
     elif any(w in text for w in ("бель", "купаль", "халат", "плед", "кровать")):
-        scene = "tasteful soft romantic mirror selfie, elegant home outfit, no nudity, non-explicit"
+        scene = "tasteful soft romantic mirror photo, elegant home outfit, covered body, non-explicit, playful private mood"
         tail = SOFT18_TAIL
     else:
-        scene = "natural phone selfie sent during a chat, cozy background, soft smile, everyday candid moment"
+        scene = "natural phone photo sent during a private chat, cozy background, direct eye contact, soft teasing smile, candid moment"
         tail = QUALITY_TAIL
     return f"{BASE_TRIGGERS}, {persona_base}, {scene}, {tail}"

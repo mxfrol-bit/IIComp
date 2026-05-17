@@ -91,12 +91,12 @@ def characters_kb(characters: list[dict]) -> InlineKeyboardMarkup:
 def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
     """Shown on character detail card: story-first navigation."""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💬 Продолжить общение", callback_data=f"chat:start:{character_id}")],
-        [InlineKeyboardButton(text="☕ Первая встреча / сцена", callback_data=f"game:meet:{character_id}")],
-        [InlineKeyboardButton(text="📸 Попросить фото", callback_data=f"chat:photo:{character_id}")],
-        [InlineKeyboardButton(text="🎲 Ролевые сцены", callback_data=f"chat:roleplay:{character_id}")],
+        [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
+        [InlineKeyboardButton(text="☕ Первая встреча", callback_data=f"game:meet:{character_id}")],
+        [InlineKeyboardButton(text="📩 Что ты пришлёшь?", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="🎭 Сценарии вдвоём", callback_data=f"chat:roleplay:{character_id}")],
         [InlineKeyboardButton(text="❤️ Романтика", callback_data=f"char:scenes:{character_id}:romantic")],
-        [InlineKeyboardButton(text="🔞 Soft 18+ позже", callback_data=f"char:scenes:{character_id}:soft18")],
+        [InlineKeyboardButton(text="🔥 Ближе", callback_data=f"char:scenes:{character_id}:soft18")],
         [InlineKeyboardButton(text="🗑 Удалить", callback_data=f"char:delete_confirm:{character_id}")],
         [InlineKeyboardButton(text="◀ Назад", callback_data="char:list")],
     ])
@@ -104,9 +104,9 @@ def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
 
 def intro_after_avatar_kb(character_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💬 Ответить ей", callback_data=f"game:intro_reply:{character_id}")],
+        [InlineKeyboardButton(text="💬 Ответить", callback_data=f"game:intro_reply:{character_id}")],
         [InlineKeyboardButton(text="☕ Первая встреча", callback_data=f"game:meet:{character_id}")],
-        [InlineKeyboardButton(text="📸 Попросить ещё фото", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="📩 Ещё момент от тебя", callback_data=f"chat:photo:{character_id}")],
     ])
 
 
@@ -115,13 +115,13 @@ def first_meeting_kb(character_id: int) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Спокойно поздороваться", callback_data=f"game:answer:{character_id}:calm")],
         [InlineKeyboardButton(text="Ответить смелее", callback_data=f"game:answer:{character_id}:bold")],
         [InlineKeyboardButton(text="Пошутить", callback_data=f"game:answer:{character_id}:funny")],
-        [InlineKeyboardButton(text="Попросить фото", callback_data=f"game:answer:{character_id}:photo")],
+        [InlineKeyboardButton(text="Намекнуть на фото", callback_data=f"game:answer:{character_id}:photo")],
     ])
 
 
 def soft18_progress_locked_kb(character_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💬 Продолжить общение", callback_data=f"chat:start:{character_id}")],
+        [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
         [InlineKeyboardButton(text="❤️ Романтика", callback_data=f"char:scenes:{character_id}:romantic")],
         [InlineKeyboardButton(text="💎 Подписка", callback_data="billing:menu")],
     ])
@@ -153,13 +153,13 @@ def after_generation_kb(character_id: int, preset_key: str, gen_id: int | None =
     preset = PRESETS.get(preset_key, {})
     mode = preset.get("rating", "safe")
     rows = [
-        [InlineKeyboardButton(text="🔄 Ещё фото в этой сцене", callback_data=f"gen:{character_id}:{preset_key}")],
+        [InlineKeyboardButton(text="🔄 Ещё такой момент", callback_data=f"gen:{character_id}:{preset_key}")],
     ]
     if gen_id is not None:
-        rows.append([InlineKeyboardButton(text="🎥 Оживить фото", callback_data=f"video:gen:{gen_id}")])
+        rows.append([InlineKeyboardButton(text="🎥 Да, хочу видео", callback_data=f"video:gen:{gen_id}")])
     rows.extend([
         [InlineKeyboardButton(text="💬 Общаться", callback_data=f"chat:start:{character_id}")],
-        [InlineKeyboardButton(text="🎬 Другая сцена", callback_data=f"char:scenes:{character_id}:{mode}")],
+        [InlineKeyboardButton(text="💕 Другой момент", callback_data=f"char:scenes:{character_id}:{mode}")],
         [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
     ])
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -175,28 +175,29 @@ def billing_kb() -> InlineKeyboardMarkup:
 
 def chat_home_kb(character_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📸 Попросить фото", callback_data=f"chat:photo:{character_id}")],
-        [InlineKeyboardButton(text="🎲 Ролевая сцена", callback_data=f"chat:roleplay:{character_id}")],
-        [InlineKeyboardButton(text="📸 Сцены", callback_data=f"char:open:{character_id}")],
+        [InlineKeyboardButton(text="📩 Что ты пришлёшь?", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="🎭 Сценарий вдвоём", callback_data=f"chat:roleplay:{character_id}")],
+        [InlineKeyboardButton(text="💕 Что дальше?", callback_data=f"char:open:{character_id}")],
         [InlineKeyboardButton(text="🚪 Закончить диалог", callback_data="chat:stop")],
     ])
 
 
 def roleplay_kb(character_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="☕ Первое свидание", callback_data=f"chat:rp:{character_id}:date")],
-        [InlineKeyboardButton(text="🌃 Ночная прогулка", callback_data=f"chat:rp:{character_id}:walk")],
-        [InlineKeyboardButton(text="🛋 Вечер дома", callback_data=f"chat:rp:{character_id}:home")],
-        [InlineKeyboardButton(text="🎁 Сюрприз", callback_data=f"chat:rp:{character_id}:surprise")],
+        [InlineKeyboardButton(text="☕ Встреча в кафе", callback_data=f"chat:rp:{character_id}:date")],
+        [InlineKeyboardButton(text="🌃 Прогулка ночью", callback_data=f"chat:rp:{character_id}:walk")],
+        [InlineKeyboardButton(text="🛋 Вечер у неё", callback_data=f"chat:rp:{character_id}:home")],
+        [InlineKeyboardButton(text="🎁 Сделать сюрприз", callback_data=f"chat:rp:{character_id}:surprise")],
+        [InlineKeyboardButton(text="🔥 Позднее сообщение", callback_data=f"chat:rp:{character_id}:tease")],
         [InlineKeyboardButton(text="💬 Вернуться в чат", callback_data=f"chat:start:{character_id}")],
     ])
 
 
 def after_chat_photo_kb(character_id: int, gen_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎥 Оживить фото", callback_data=f"video:gen:{gen_id}")],
-        [InlineKeyboardButton(text="📸 Ещё фото из чата", callback_data=f"chat:photo:{character_id}")],
-        [InlineKeyboardButton(text="💬 Продолжить общение", callback_data=f"chat:start:{character_id}")],
+        [InlineKeyboardButton(text="🎥 Да, хочу видео", callback_data=f"video:gen:{gen_id}")],
+        [InlineKeyboardButton(text="📩 Ещё один момент", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
         [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
     ])
 
@@ -204,6 +205,6 @@ def after_chat_photo_kb(character_id: int, gen_id: int) -> InlineKeyboardMarkup:
 def after_video_kb(character_id: int | None = None) -> InlineKeyboardMarkup:
     rows = []
     if character_id is not None:
-        rows.append([InlineKeyboardButton(text="💬 Продолжить общение", callback_data=f"chat:start:{character_id}")])
+        rows.append([InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")])
     rows.append([InlineKeyboardButton(text="◀ В меню", callback_data="menu")])
     return InlineKeyboardMarkup(inline_keyboard=rows)

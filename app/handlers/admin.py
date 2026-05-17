@@ -110,7 +110,7 @@ async def _stats(message: Message):
         "📊 *Статистика*\n\n"
         f"👥 Юзеров: *{users_total}* (платных: *{users_paid}*)\n"
         f"💕 Персонажей создано: *{chars_total}*\n"
-        f"📸 Фото сгенерировано: *{gens_done}* (провалов: {gens_failed})\n"
+        f"📸 Моментов создано: *{gens_done}* (провалов: {gens_failed})\n"
         f"🤝 Рефералов: *{refs}*"
     )
     await message.answer(text, parse_mode="Markdown")

@@ -21,10 +21,11 @@ router = Router()
 log = logging.getLogger(__name__)
 
 ROLEPLAY_STARTERS = {
-    "date": "Сцена: первое свидание в маленьком кафе. Я немного волнуюсь, но рада тебя видеть. Начни разговор.",
-    "walk": "Сцена: ночная прогулка по городу после дождя. Витрины отражаются в асфальте, мы идём рядом. Что ты скажешь?",
-    "home": "Сцена: уютный вечер дома, фильм на паузе, чай остывает на столе. Мы наконец остались вдвоём. Продолжай сцену.",
-    "surprise": "Сцена: ты приготовил для меня неожиданный сюрприз. Я открываю дверь и улыбаюсь. Что там?",
+    "date": "Сцена: вы впервые встретились в маленьком кафе. Она уже ждёт у окна, улыбается и говорит: «Я думала, ты не решишься подойти». Ответь ей.",
+    "walk": "Сцена: поздняя прогулка после дождя. Она идёт рядом слишком близко, иногда задевает твою руку и делает вид, что случайно. Что ты скажешь?",
+    "home": "Сцена: вечер у неё дома. Фильм давно на паузе, свет приглушён, она смотрит прямо на тебя и спрашивает: «И что мы теперь будем делать?»",
+    "surprise": "Сцена: ты сделал ей неожиданный сюрприз. Она открывает дверь, улыбается и говорит: «Ты правда решил меня удивить?» Что ты приготовил?",
+    "tease": "Сцена: она прислала сообщение поздно вечером: «Я не могу уснуть. Развлечёшь меня?» Ответь ей так, чтобы она улыбнулась.",
 }
 
 
@@ -49,7 +50,7 @@ async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "
         return
 
     gen = db.create_generation(user["id"], char["id"], "chat_photo", prompt)
-    placeholder = await cb_or_msg.answer("📸 Делаю фото по настроению диалога… обычно 10–15 секунд.")
+    placeholder = await cb_or_msg.answer("Она набирает сообщение…\n\n«Я могу прислать тебе один момент. Только это будет между нами…»")
 
     try:
         image_url = await generate_image(prompt=prompt, seed=random.randint(1, 2_000_000_000))
@@ -72,7 +73,7 @@ async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "
 
         await cb_or_msg.answer_photo(
             URLInputFile(stored_url),
-            caption=f"📸 {char['name']} прислала фото из диалога",
+            caption=f"💌 {char['name']} прислала момент только для тебя",
             reply_markup=after_chat_photo_kb(char["id"], gen["id"]),
         )
     except Exception as e:
@@ -98,7 +99,7 @@ async def on_chat_start(cb: CallbackQuery):
         f"💬 *{char['name']} на связи*\n\n"
         f"Отношения: *{score}/100*\n\n"
         "Пиши ей обычным сообщением — как в чате. Она отвечает от своего характера и помнит последние реплики.\n\n"
-        "Можно написать: «как твой день?», «давай встретимся», «пришли селфи», «сыграем сцену»."
+        "Пиши естественно: «как ты?», «я бы хотел увидеть тебя», «давай встретимся», «что бы ты сделала, если бы я был рядом?»."
     )
     try:
         await cb.message.edit_text(text, reply_markup=chat_home_kb(char_id), parse_mode="Markdown")
@@ -124,15 +125,15 @@ async def on_chat_photo(cb: CallbackQuery):
     if not char or char["user_id"] != user["id"]:
         await cb.answer("Персонаж не найден", show_alert=True)
         return
-    await cb.answer("Делаю фото…")
-    await _send_chat_photo(cb.message, user, char, "пришли фото из нашего диалога")
+    await cb.answer("Она готовит момент…")
+    await _send_chat_photo(cb.message, user, char, "хочу увидеть тебя сейчас")
 
 
 @router.callback_query(F.data.startswith("chat:roleplay:"))
 async def on_roleplay_home(cb: CallbackQuery):
     char_id = int(cb.data.split(":")[-1])
     await cb.message.answer(
-        "🎲 Выбери стартовую сцену. Дальше ты просто пишешь реплики, а персонаж отвечает как в игре.",
+        "🎭 Выбери настроение сцены. Дальше просто отвечай ей как в настоящем диалоге — без меню и команд.",
         reply_markup=roleplay_kb(char_id),
     )
     await cb.answer()
@@ -151,7 +152,7 @@ async def on_roleplay_start(cb: CallbackQuery):
     starter = ROLEPLAY_STARTERS.get(key, ROLEPLAY_STARTERS["date"])
     db.add_chat_message(user["id"], char_id, "system", starter, event_type="roleplay_start")
     await cb.message.answer(
-        f"🎲 *Ролевая сцена началась*\n\n{starter}\n\nПиши следующую реплику обычным сообщением.",
+        f"🎭 *Сцена началась*\n\n{starter}\n\nПиши ей обычным сообщением — будто вы уже внутри этого момента.",
         reply_markup=chat_home_kb(char_id),
         parse_mode="Markdown",
     )
@@ -197,4 +198,4 @@ async def on_chat_message(message: Message):
     if intent == "photo":
         await _send_chat_photo(message, user, char, text)
     elif intent == "video":
-        await message.answer("🎥 Видео делается из уже готового фото. Открой любое фото и нажми «🎥 Оживить фото».")
+        await message.answer("Она может отправить короткое видео из уже понравившегося момента. Открой кадр и нажми «🎥 Да, хочу видео».")

@@ -98,7 +98,7 @@ async def on_style(cb: CallbackQuery, state: FSMContext):
 
     await cb.message.edit_text(
         f"✨ *{char['name']} создана.*\n\n"
-        "Сейчас сделаю её первое фото — как стартовую карточку персонажа в игре…",
+        "Сейчас она пришлёт первый момент — как будто вы только что познакомились…",
         parse_mode="Markdown",
     )
     await cb.answer()
@@ -136,7 +136,7 @@ async def on_style(cb: CallbackQuery, state: FSMContext):
         db.update_generation(gen["id"], status="failed", error=str(e)[:500])
         await cb.message.answer(
             f"💕 *{char['name']} создана.*\n\n"
-            f"Фото не получилось, но диалог уже начался.\n\n{first_text}",
+            f"Первый момент не отправился, но она уже написала.\n\n{first_text}",
             reply_markup=intro_after_avatar_kb(char["id"]),
             parse_mode="Markdown",
         )
@@ -191,7 +191,7 @@ async def on_open(cb: CallbackQuery):
             )
         else:
             await cb.message.edit_text(
-                text + "\n\n_Сгенерируй первое фото — оно станет аватаркой._",
+                text + "\n\n_Первый момент ещё не отправлен — можно начать общение._",
                 reply_markup=character_detail_kb(char_id),
                 parse_mode="Markdown",
             )
@@ -224,7 +224,7 @@ async def on_scenes(cb: CallbackQuery):
         score = db.get_relationship(user["id"])
         if user.get("tier") not in ("pro", "premium"):
             text = (
-                "🔞 *Soft 18+ откроется позже*\n\n"
+                "🔞 *Более близкие сцены откроются позже*\n\n"
                 "Сначала создай контакт с персонажем: общение, первая встреча, романтические сцены.\n\n"
                 "Для доступа нужен тариф *Pro* или *Premium*."
             )
@@ -236,9 +236,9 @@ async def on_scenes(cb: CallbackQuery):
             return
         if score < SOFT18_RELATIONSHIP_MIN:
             text = (
-                "🔞 *Soft 18+ пока закрыт*\n\n"
+                "🔥 *Более близкие сцены пока рано*\n\n"
                 f"Отношения: *{score}/100*. Нужно хотя бы *{SOFT18_RELATIONSHIP_MIN}/100*.\n\n"
-                "Поговори с ней, пройди первую встречу и романтические сцены — раздел откроется логично по сюжету."
+                "Поговори с ней, пройди первую встречу и романтические сцены — она должна сама начать доверять тебе."
             )
             try:
                 await cb.message.edit_text(text, reply_markup=soft18_progress_locked_kb(char_id), parse_mode="Markdown")
@@ -266,7 +266,7 @@ async def on_delete_confirm(cb: CallbackQuery):
         return
     text = (
         f"🗑 *Удалить {char['name']}?*\n\n"
-        "Это действие необратимо — все сгенерированные фото пропадут."
+        "Это действие необратимо — вся история и моменты пропадут."
     )
     try:
         await cb.message.edit_text(text, reply_markup=delete_confirm_kb(char_id), parse_mode="Markdown")

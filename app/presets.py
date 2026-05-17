@@ -10,7 +10,7 @@ Ratings:
 BASE_TRIGGERS = "amateurish photo, low lighting, shot on iPhone, slightly noisy, Super Realism"
 QUALITY_TAIL = "natural skin texture, candid moment, soft daylight, depth of field, realistic everyday photo"
 ROMANTIC_TAIL = "warm romantic mood, gentle expression, cinematic but natural, tasteful and non-explicit"
-SOFT18_TAIL = "tasteful soft romantic photo, no nudity, non-explicit, elegant, natural body language"
+SOFT18_TAIL = "tasteful soft romantic photo, covered body, non-explicit, elegant, natural body language"
 
 # callback_data лимит Telegram 64 байта, поэтому ключи короткие.
 PRESETS: dict[str, dict] = {
@@ -94,29 +94,51 @@ PRESETS: dict[str, dict] = {
     "good_morning_msg": {"label": "☀️ Доброе утро", "rating": "romantic", "category": "romance",
                          "scene": "good morning selfie, messy hair, oversized hoodie, warm window light, gentle romantic expression"},
 
+    "date_close_table":  {"label": "🔥 Близко за столиком", "rating": "romantic", "category": "romance",
+                         "scene": "sitting very close across a small cafe table, intense eye contact, playful smile, warm candle light, tasteful romantic tension"},
+    "taxi_after_date":   {"label": "🔥 Такси после свидания", "rating": "romantic", "category": "romance",
+                         "scene": "back seat of a taxi after a date, city lights through window, leaning closer, playful confident smile, tasteful romantic mood"},
+    "doorway_goodnight": {"label": "🔥 У двери", "rating": "romantic", "category": "romance",
+                         "scene": "standing in a doorway after a date, warm hallway light, almost goodbye moment, teasing smile, tasteful non-explicit tension"},
+    "slow_dance_home":   {"label": "🔥 Медленный танец", "rating": "romantic", "category": "romance",
+                         "scene": "slow dance at home in dim warm light, close but tasteful, soft smile, romantic tension, elegant home clothes"},
+
     # --- Soft 18+, non-explicit, Pro/Premium gate ---
     "soft_pajama":      {"label": "🔞 Пижама", "rating": "soft18", "category": "soft18",
-                         "scene": "tasteful bedroom selfie in silk pajamas, soft morning light, no nudity, elegant and cozy"},
+                         "scene": "tasteful bedroom selfie in silk pajamas, soft morning light, covered body, elegant and cozy"},
     "soft_lingerie_shirt": {"label": "🔞 Рубашка", "rating": "soft18", "category": "soft18",
-                         "scene": "tasteful mirror selfie wearing an oversized white shirt over elegant lingerie, no nudity, soft bedroom light"},
+                         "scene": "tasteful mirror selfie wearing an oversized white shirt over elegant lingerie, covered body, soft bedroom light"},
     "soft_beach_bikini": {"label": "🔞 Купальник", "rating": "soft18", "category": "soft18",
                          "scene": "beach selfie in a stylish bikini, golden hour, natural smile, tasteful non-explicit summer photo"},
     "soft_bathrobe":    {"label": "🔞 Халат", "rating": "soft18", "category": "soft18",
-                         "scene": "after shower in a soft bathrobe, bathroom mirror selfie, wet hair, no nudity, tasteful cozy photo"},
+                         "scene": "after shower in a soft bathrobe, bathroom mirror selfie, wet hair, covered body, tasteful cozy photo"},
     "soft_bed_blanket": {"label": "🔞 Утро под пледом", "rating": "soft18", "category": "soft18",
-                         "scene": "morning in bed under a blanket, shoulders covered, soft sleepy smile, no nudity, warm natural light"},
+                         "scene": "morning in bed under a blanket, shoulders covered, soft sleepy smile, covered body, warm natural light"},
     "soft_black_dress": {"label": "🔞 Вечернее платье", "rating": "soft18", "category": "soft18",
                          "scene": "elegant black dress at night, tasteful confident pose, restaurant mirror, soft flash photo"},
     "soft_gym_top":     {"label": "🔞 Спорт-топ", "rating": "soft18", "category": "soft18",
                          "scene": "gym mirror selfie in fitted athletic top and leggings, post-workout glow, tasteful non-explicit photo"},
     "soft_rain_shirt":  {"label": "🔞 Дождь", "rating": "soft18", "category": "soft18",
-                         "scene": "rainy evening photo in a slightly wet white shirt over a top, city lights, no nudity, tasteful romantic mood"},
+                         "scene": "rainy evening photo in a slightly wet white shirt over a top, city lights, covered body, tasteful romantic mood"},
+
+    "soft_his_hoodie":   {"label": "🔥 В твоей худи", "rating": "soft18", "category": "soft18",
+                         "scene": "private home photo wearing an oversized hoodie, bare legs covered by long hoodie, cozy bed background, playful smile, non-explicit"},
+    "soft_late_text":    {"label": "🔥 Позднее сообщение", "rating": "soft18", "category": "soft18",
+                         "scene": "late night private phone photo in soft bedroom light, elegant pajama top, messy hair, direct eye contact, playful teasing mood, covered body"},
+    "soft_dressing_room": {"label": "🔥 Примерочная", "rating": "soft18", "category": "soft18",
+                         "scene": "tasteful dressing room mirror photo trying on an elegant dress, confident playful pose, covered body, non-explicit"},
+    "soft_pool_evening": {"label": "🔥 Вечер у бассейна", "rating": "soft18", "category": "soft18",
+                         "scene": "evening poolside photo in stylish swimsuit with light shirt, golden lights, confident smile, tasteful non-explicit"},
+    "soft_candle_room":  {"label": "🔥 Свечи", "rating": "soft18", "category": "soft18",
+                         "scene": "warm candlelit bedroom photo, silk pajama set, sitting on bed, soft teasing smile, covered body, tasteful"},
+    "soft_after_date":   {"label": "🔥 После свидания", "rating": "soft18", "category": "soft18",
+                         "scene": "private after-date mirror photo, elegant dress slightly relaxed, warm hallway light, playful smile, covered body, non-explicit"},
 }
 
 MODE_TITLES = {
     "safe": "📸 Обычные сцены",
     "romantic": "❤️ Романтика",
-    "soft18": "🔞 Soft 18+",
+    "soft18": "🔥 Ближе",
     "all": "🎬 Все сцены",
 }
 
