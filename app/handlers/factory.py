@@ -389,7 +389,15 @@ async def product_photo(message: Message, state: FSMContext, bot: Bot):
     await bot.download_file(file.file_path, destination=bio)
     raw = bio.getvalue()
     path = f"factory/u{user['id']}/products/tmp_{int(time.time())}_{len(photos)+1}.jpg"
-    url = await db.upload_bytes(raw, path, content_type="image/jpeg")
+    try:
+        url = await db.upload_bytes(raw, path, content_type="image/jpeg")
+    except Exception as e:
+        log.exception("Product photo upload failed")
+        await message.answer(
+            "Не получилось сохранить фото товара. Попробуй ещё раз через минуту.\n"
+            f"(storage: {str(e)[:120]})"
+        )
+        return
     photos.append(url)
     await state.update_data(photos=photos)
     await message.answer(f"Фото принято: {len(photos)}/5. Можно загрузить ещё или нажать «Готово».", reply_markup=product_upload_kb(True))

@@ -5,9 +5,51 @@ from typing import Any, Optional
 import httpx
 from supabase import Client, create_client
 
+import logging
+
 from app.config import settings
 
 supabase: Client = create_client(settings.supabase_url, settings.supabase_service_key)
+
+log = logging.getLogger(__name__)
+
+# Storage bucket (configurable via STORAGE_BUCKET). The DB has a *table* named
+# "generations"; this is the *storage bucket*, a separate namespace. The
+# original v3 shipped without creating it -> every upload returned
+# `400 Bucket not found`. Each later version (v4..v10) was rebuilt on that
+# broken v3 and lost the fix, which is why video/photo "silently fail".
+BUCKET = settings.storage_bucket
+
+
+def ensure_storage_bucket() -> None:
+    """Create the public storage bucket if missing. Idempotent — safe on every
+    startup. This is THE fix for: 'Не получилось сделать видео', product photo
+    not saved, hero/identity refs lost. Without the bucket every upload_* call
+    raises and the whole pipeline degrades or fails."""
+    try:
+        existing = {b.name for b in supabase.storage.list_buckets()}
+    except Exception as e:
+        log.warning("Cannot list storage buckets (%s); will attempt create anyway", e)
+        existing = set()
+
+    if BUCKET in existing:
+        log.info("Storage bucket '%s' OK", BUCKET)
+        return
+
+    try:
+        supabase.storage.create_bucket(
+            BUCKET,
+            options={
+                "public": True,
+                "file_size_limit": 209715200,  # 200 MB (Wan 10-15s mp4 can be big)
+                "allowed_mime_types": [
+                    "image/jpeg", "image/png", "image/webp", "video/mp4",
+                ],
+            },
+        )
+        log.info("Storage bucket '%s' created (public)", BUCKET)
+    except Exception as e:
+        log.warning("create_bucket('%s') raised %s — assuming it now exists", BUCKET, e)
 
 
 # ---------- Users ----------
@@ -251,11 +293,11 @@ async def upload_image_from_url(remote_url: str, dest_path: str) -> str:
         resp.raise_for_status()
         data = resp.content
 
-    supabase.storage.from_("generations").upload(
+    supabase.storage.from_(BUCKET).upload(
         dest_path, data,
         file_options={"content-type": "image/jpeg", "upsert": "true"},
     )
-    return supabase.storage.from_("generations").get_public_url(dest_path)
+    return supabase.storage.from_(BUCKET).get_public_url(dest_path)
 
 
 # ---------- Companion chat / game state ----------
@@ -330,11 +372,11 @@ async def upload_file_from_url(remote_url: str, dest_path: str, content_type: st
         resp.raise_for_status()
         data = resp.content
 
-    supabase.storage.from_("generations").upload(
+    supabase.storage.from_(BUCKET).upload(
         dest_path, data,
         file_options={"content-type": content_type, "upsert": "true"},
     )
-    return supabase.storage.from_("generations").get_public_url(dest_path)
+    return supabase.storage.from_(BUCKET).get_public_url(dest_path)
 
 # ---------- Payments ----------
 
@@ -474,9 +516,9 @@ def save_content_plan(user_id: int, model_id: int, product_id: Optional[int], ni
 
 
 async def upload_bytes(data: bytes, dest_path: str, content_type: str = "application/octet-stream") -> str:
-    supabase.storage.from_("generations").upload(
+    supabase.storage.from_(BUCKET).upload(
         dest_path,
         data,
         file_options={"content-type": content_type, "upsert": "true"},
     )
-    return supabase.storage.from_("generations").get_public_url(dest_path)
+    return supabase.storage.from_(BUCKET).get_public_url(dest_path)

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str
     supabase_service_key: str
+    storage_bucket: str = "generations"
 
     # Tiers
     free_daily_credits: int = 3

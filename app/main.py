@@ -10,6 +10,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from app.config import settings
 from app.handlers import admin, billing, factory, start
 from app.web import app as web_app
+from app import db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +33,8 @@ async def run_bot() -> None:
         billing.router,
     )
 
-    log.info("AI Content Factory v8 starting. Image model: %s; video model: %s; prompt provider: %s", settings.fal_model, settings.video_model_i2v, settings.prompt_provider)
+    log.info("AI Content Factory v10 starting. Image model: %s; video model: %s; prompt provider: %s", settings.fal_model, settings.video_model_i2v, settings.prompt_provider)
+    db.ensure_storage_bucket()
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 

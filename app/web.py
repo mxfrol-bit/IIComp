@@ -88,42 +88,83 @@ def _base(title: str, body: str, *, compact: bool = False) -> str:
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0d0c0a" />
 <title>{_esc(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root {{
-  --bg:#070A12; --bg2:#0b1020; --card:rgba(255,255,255,.075); --card2:rgba(255,255,255,.045);
-  --line:rgba(255,255,255,.11); --text:#eef4ff; --muted:#95a3bb; --soft:#c9d5ee;
-  --brand:#8b5cf6; --brand2:#06b6d4; --green:#27d980; --yellow:#ffcf5a; --red:#ff5f7a;
-  --shadow:0 24px 90px rgba(0,0,0,.35); --r:26px;
+  --ink:#15130f; --paper:#f4f1ea; --paper2:#ece7da; --card:#fffdf7;
+  --line:#d8d2c2; --line2:#c2bba6; --muted:#736b58; --soft:#3f3a30;
+  --accent:#e0431f; --accent2:#1a1714; --gold:#b8893b; --green:#3f6f43;
+  --shadow:0 1px 0 #fff inset, 0 18px 50px -28px rgba(20,16,10,.45);
+  --r:6px; --disp:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --serif:'Spectral',Georgia,serif; --mono:'JetBrains Mono',ui-monospace,monospace;
 }}
-*{{box-sizing:border-box}} html{{scroll-behavior:smooth}} body{{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--text);background:
-radial-gradient(1000px 600px at 10% -10%,rgba(139,92,246,.32),transparent 55%),
-radial-gradient(900px 520px at 88% 0%,rgba(6,182,212,.24),transparent 52%),
-linear-gradient(180deg,#050812,#0A0F1E 60%,#060811);}}
-a{{color:inherit;text-decoration:none}} .wrap{{max-width:1260px;margin:0 auto;padding:{'18px' if compact else '24px'} 18px 80px}}
-.nav{{position:sticky;top:0;z-index:50;backdrop-filter:blur(18px);background:rgba(5,8,18,.72);border-bottom:1px solid var(--line)}}
-.nav-inner{{max-width:1260px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}}
-.logo{{display:flex;align-items:center;gap:10px;font-weight:950;letter-spacing:-.04em;font-size:20px}} .logo-badge{{width:38px;height:38px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;box-shadow:0 15px 45px rgba(139,92,246,.28)}}
-.nav-links{{display:flex;gap:8px;flex-wrap:wrap;align-items:center}} .nav-links a{{padding:10px 12px;border-radius:999px;color:#d6def2;border:1px solid transparent;font-size:14px}} .nav-links a:hover{{background:rgba(255,255,255,.06);border-color:var(--line)}}
-.hero{{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;padding:42px 0 24px}} .kicker{{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(39,217,128,.13);border:1px solid rgba(39,217,128,.24);color:#b9ffd8;font-weight:800;font-size:13px}}
-h1{{font-size:clamp(36px,7vw,76px);line-height:.92;letter-spacing:-.075em;margin:18px 0 16px}} .lead{{font-size:19px;line-height:1.65;color:var(--soft);max-width:720px}} .muted{{color:var(--muted)}}
-.actions{{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}} .btn{{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:16px;padding:13px 17px;font-weight:900;background:linear-gradient(135deg,var(--brand),var(--brand2));color:white;box-shadow:0 18px 50px rgba(139,92,246,.23);cursor:pointer}} .btn.alt{{background:rgba(255,255,255,.07);border:1px solid var(--line);box-shadow:none}} .btn.dark{{background:#111827;border:1px solid var(--line)}}
-.panel{{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px}} .glass{{background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:22px;padding:18px}}
-.grid{{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}} .card{{grid-column:span 4;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 16px 65px rgba(0,0,0,.2)}} .card.span6{{grid-column:span 6}} .card.span8{{grid-column:span 8}} .card.span12{{grid-column:span 12}} .card.span3{{grid-column:span 3}}
-.num{{font-size:42px;font-weight:950;letter-spacing:-.05em}} .label{{color:var(--muted);margin-top:4px}} .h2{{font-size:30px;letter-spacing:-.05em;margin:0 0 12px}} .h3{{font-size:20px;letter-spacing:-.03em;margin:0 0 8px}} .small{{font-size:13px;color:var(--muted);line-height:1.55}}
-.tag{{display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.28);padding:6px 9px;border-radius:999px;color:#dcd4ff;font-size:12px;font-weight:800}} .tag.green{{background:rgba(39,217,128,.12);border-color:rgba(39,217,128,.25);color:#bdfbd8}} .tag.yellow{{background:rgba(255,207,90,.12);border-color:rgba(255,207,90,.25);color:#ffe7a2}}
-.section{{padding:30px 0}} .flow{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}} .step{{background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:20px;padding:14px;min-height:132px}} .step b{{display:block;margin-bottom:8px}}
-.tabs{{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}} .tab{{padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.055);cursor:pointer;color:#d7e1f7;font-weight:800;font-size:13px}} .tab.active{{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:white}} .tabpage{{display:none}} .tabpage.active{{display:block}}
-table{{width:100%;border-collapse:collapse;overflow:hidden;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid var(--line)}} th,td{{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}} th{{color:#e5ecff;background:rgba(255,255,255,.06)}} td{{color:#cbd7ee}}
-.mock-phone{{max-width:390px;margin:0 auto;background:linear-gradient(180deg,#131b2d,#090d18);border:1px solid var(--line);border-radius:42px;padding:16px;box-shadow:var(--shadow)}} .screen{{border-radius:32px;background:#070a12;min-height:560px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}} .screen-head{{padding:18px;background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(6,182,212,.18));border-bottom:1px solid var(--line)}} .tile{{padding:14px;margin:12px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid var(--line)}} .thumbs{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}} .thumb{{aspect-ratio:4/5;border-radius:16px;background:linear-gradient(135deg,rgba(139,92,246,.35),rgba(6,182,212,.22));border:1px solid var(--line);display:grid;place-items:center;color:#d8e1ff;font-weight:900}}
-.check{{display:grid;gap:10px}} .check div{{display:flex;gap:9px;align-items:flex-start;color:#d3ddf2}} .dot{{width:9px;height:9px;border-radius:50%;background:var(--green);margin-top:7px;flex:0 0 auto}}
-.footer{{border-top:1px solid var(--line);margin-top:30px;padding-top:22px;color:var(--muted);font-size:13px}}
-@media(max-width:900px){{.hero{{grid-template-columns:1fr}}.grid{{grid-template-columns:1fr}}.card,.card.span3,.card.span4,.card.span6,.card.span8,.card.span12{{grid-column:span 1}}.flow{{grid-template-columns:1fr}}.nav-links{{display:none}}}}
+*{{box-sizing:border-box}} html{{scroll-behavior:smooth}}
+body{{margin:0;font-family:var(--disp);color:var(--ink);background:var(--paper);
+  background-image:
+    linear-gradient(rgba(20,16,10,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(20,16,10,.022) 1px,transparent 1px);
+  background-size:34px 34px;font-feature-settings:"ss01","cv01";-webkit-font-smoothing:antialiased}}
+a{{color:inherit;text-decoration:none}}
+.wrap{{max-width:1240px;margin:0 auto;padding:{'14px' if compact else '20px'} 22px 90px}}
+.nav{{position:sticky;top:0;z-index:50;background:rgba(244,241,234,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line2)}}
+.nav-inner{{max-width:1240px;margin:0 auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px}}
+.logo{{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.02em;font-size:18px;text-transform:uppercase}}
+.logo-badge{{width:34px;height:34px;border-radius:3px;background:var(--accent2);color:var(--paper);display:grid;place-items:center;font-size:15px;border:1px solid var(--ink)}}
+.nav-links{{display:flex;gap:2px;flex-wrap:wrap;align-items:center}}
+.nav-links a{{padding:8px 13px;color:var(--soft);font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid transparent}}
+.nav-links a:hover{{color:var(--accent);border-bottom-color:var(--accent)}}
+.hero{{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center;padding:54px 0 30px;border-bottom:1px solid var(--line2)}}
+.kicker{{display:inline-flex;gap:8px;align-items:center;padding:6px 11px;border:1px solid var(--ink);border-radius:2px;background:var(--ink);color:var(--paper);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.13em}}
+h1{{font-family:var(--disp);font-size:clamp(38px,6.6vw,74px);line-height:.96;letter-spacing:-.045em;margin:20px 0 18px;font-weight:700}}
+.lead{{font-family:var(--serif);font-size:20px;line-height:1.62;color:var(--soft);max-width:660px}}
+.muted{{color:var(--muted);font-family:var(--serif);line-height:1.6}}
+.actions{{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}}
+.btn{{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--ink);border-radius:3px;padding:13px 20px;font-family:var(--disp);font-weight:700;font-size:14px;background:var(--accent);color:#fff;cursor:pointer;text-transform:uppercase;letter-spacing:.03em;transition:transform .12s,box-shadow .12s;box-shadow:3px 3px 0 var(--ink)}}
+.btn:hover{{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}}
+.btn.alt{{background:var(--card);color:var(--ink)}} .btn.dark{{background:var(--accent2);color:var(--paper)}}
+.panel{{background:var(--card);border:1px solid var(--line2);border-radius:var(--r);box-shadow:var(--shadow);padding:24px}}
+.glass{{background:var(--paper2);border:1px solid var(--line);border-radius:var(--r);padding:18px}}
+.grid{{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}}
+.card{{grid-column:span 4;background:var(--card);border:1px solid var(--line2);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}}
+.card.span6{{grid-column:span 6}} .card.span8{{grid-column:span 8}} .card.span12{{grid-column:span 12}} .card.span3{{grid-column:span 3}} .card.span4{{grid-column:span 4}}
+.num{{font-family:var(--mono);font-size:40px;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums}}
+.label{{color:var(--muted);margin-top:6px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;font-weight:500}}
+.h2{{font-family:var(--disp);font-size:27px;letter-spacing:-.035em;margin:0 0 14px;font-weight:700}}
+.h3{{font-family:var(--disp);font-size:18px;letter-spacing:-.02em;margin:0 0 9px;font-weight:700;text-transform:uppercase}}
+.small{{font-size:13px;color:var(--muted);line-height:1.6;font-family:var(--mono)}}
+.tag{{display:inline-flex;align-items:center;gap:6px;background:var(--paper2);border:1px solid var(--line2);padding:5px 10px;border-radius:2px;color:var(--soft);font-size:12px;font-weight:500;font-family:var(--mono)}}
+.tag.green{{background:#e7efe2;border-color:#b9cdb0;color:var(--green)}} .tag.yellow{{background:#f3ead2;border-color:#d8c189;color:var(--gold)}}
+.section{{padding:34px 0}}
+.flow{{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}}
+.step{{background:var(--card);padding:18px;min-height:128px;border-right:1px solid var(--line2);position:relative}} .step:last-child{{border-right:0}}
+.step b{{display:block;margin-bottom:9px;font-family:var(--disp);text-transform:uppercase;font-size:14px;letter-spacing:-.01em}}
+.step::before{{content:counter(s,decimal-leading-zero);counter-increment:s;font-family:var(--mono);font-size:11px;color:var(--accent);position:absolute;top:14px;right:14px;font-weight:700}}
+.flow{{counter-reset:s}}
+.tabs{{display:flex;gap:0;flex-wrap:wrap;margin:20px 0;border-bottom:1px solid var(--line2)}}
+.tab{{padding:11px 16px;border:0;border-bottom:2px solid transparent;background:none;cursor:pointer;color:var(--muted);font-family:var(--disp);font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.03em}}
+.tab.active{{color:var(--accent);border-bottom-color:var(--accent)}} .tabpage{{display:none}} .tabpage.active{{display:block}}
+table{{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}}
+th,td{{padding:12px 13px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top;font-family:var(--mono)}}
+th{{color:var(--ink);background:var(--paper2);text-transform:uppercase;font-size:11px;letter-spacing:.08em;font-weight:700}} td{{color:var(--soft)}} tr:last-child td{{border-bottom:0}} td a{{color:var(--accent);font-weight:700}}
+.mock-phone{{max-width:380px;margin:0 auto;background:var(--accent2);border:1px solid var(--ink);border-radius:32px;padding:13px;box-shadow:8px 8px 0 var(--ink)}}
+.screen{{border-radius:22px;background:var(--paper);min-height:540px;overflow:hidden;border:1px solid var(--line2)}}
+.screen-head{{padding:18px;background:var(--ink);color:var(--paper);border-bottom:1px solid var(--ink)}}
+.tile{{padding:14px;margin:12px;border-radius:4px;background:var(--card);border:1px solid var(--line2)}}
+.thumbs{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
+.thumb{{aspect-ratio:4/5;border-radius:3px;background:var(--accent2);border:1px solid var(--ink);display:grid;place-items:center;color:var(--paper);font-family:var(--disp);font-weight:700}}
+.check{{display:grid;gap:11px}} .check div{{display:flex;gap:10px;align-items:flex-start;color:var(--soft);font-family:var(--serif);font-size:15px}}
+.dot{{width:7px;height:7px;border-radius:0;background:var(--accent);margin-top:8px;flex:0 0 auto;transform:rotate(45deg)}}
+.footer{{border-top:1px solid var(--line2);margin-top:40px;padding-top:24px;color:var(--muted);font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}}
+@media(max-width:900px){{.hero{{grid-template-columns:1fr;padding:34px 0 22px}}.grid{{grid-template-columns:1fr}}.card,.card.span3,.card.span4,.card.span6,.card.span8,.card.span12{{grid-column:span 1}}.flow{{grid-template-columns:1fr}}.step{{border-right:0;border-bottom:1px solid var(--line2)}}.nav-links{{display:none}}}}
 </style>
 </head>
 <body>
-<div class="nav"><div class="nav-inner"><a class="logo" href="/"><span class="logo-badge">🏭</span><span>IIComp</span></a><div class="nav-links"><a href="/studio">Studio</a><a href="/pitch">Investor</a><a href="/mini">Mini App</a><a href="/health">Health</a></div></div></div>
-<div class="wrap">{body}<div class="footer">IIComp AI Content Factory · Telegram + Web + Mini App · Railway + Supabase + fal.ai + Grok</div></div>
+<div class="nav"><div class="nav-inner"><a class="logo" href="/"><span class="logo-badge">◢</span><span>IIComp&nbsp;Factory</span></a><div class="nav-links"><a href="/studio">Studio</a><a href="/pitch">Investors</a><a href="/mini">Mini&nbsp;App</a><a href="/health">Status</a></div></div></div>
+<div class="wrap">{body}<div class="footer">IIComp AI Content Factory — Telegram · Web · Mini App — Railway / Supabase / fal.ai / Grok</div></div>
 <script>
 function showTab(name){{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));document.querySelectorAll('.tabpage').forEach(x=>x.classList.toggle('active',x.id===name));}}
 async function loadStudio(){{try{{const r=await fetch('/studio/api/overview');const d=await r.json();document.querySelectorAll('[data-stat]').forEach(el=>{{el.textContent=d.stats[el.dataset.stat]??'0'}});}}catch(e){{console.log(e)}}}}
@@ -198,26 +239,30 @@ async def landing():
 
 @app.get("/pitch", response_class=HTMLResponse)
 async def pitch():
+    s = _stats()
     body = f"""
     <section class='hero'>
-      <div><span class='kicker'>📊 Investor mode</span><h1>AI-фабрика коммерческого контента</h1><p class='lead'>Завтра на демо показываем не “ботик”, а полный workflow: AI-модель → товар → рекламный кадр → Reels → контент-план → аналитика.</p><div class='actions'><a class='btn' href='/studio'>Live Product Demo</a><a class='btn alt' href='{_bot_link()}'>Telegram Bot</a></div></div>
-      <div class='panel'><h2 class='h2'>5-минутный сценарий показа</h2><div class='check'>
-        <div><span class='dot'></span><span>Создать AI-модель под нишу бренда.</span></div>
-        <div><span class='dot'></span><span>Загрузить товар: шоколад, тюбик, платье или бутылка.</span></div>
+      <div><span class='kicker'>◢ Investor Brief</span><h1>Студия рекламного контента без съёмок</h1><p class='lead'>AI-модель, товар и сценарий превращаются в фото, Reels и UGC для брендов и маркетплейсов. Один пайплайн вместо студии, моделей и продакшена.</p><div class='actions'><a class='btn' href='/studio'>Живая демонстрация</a><a class='btn alt' href='{_bot_link()}'>Открыть в Telegram</a></div></div>
+      <div class='panel'><h3 class='h3'>Сценарий показа · 5 минут</h3><div class='check'>
+        <div><span class='dot'></span><span>Создать AI-модель под нишу бренда (30 сек).</span></div>
+        <div><span class='dot'></span><span>Загрузить товар: тюбик, платье, бутылку.</span></div>
         <div><span class='dot'></span><span>Получить 3 рекламных кадра в разных стилях.</span></div>
-        <div><span class='dot'></span><span>Из лучшего кадра сделать Reels 9:16.</span></div>
-        <div><span class='dot'></span><span>Открыть Web Admin и показать статистику/воронку.</span></div>
+        <div><span class='dot'></span><span>Собрать Reels 9:16 из лучшего кадра.</span></div>
+        <div><span class='dot'></span><span>Открыть админку — всё сохранено в системе.</span></div>
       </div></div>
     </section>
-    <section class='grid'>
-      <div class='card span4'><h3 class='h3'>Боль рынка</h3><p class='muted'>Брендам нужны десятки креативов, но съёмки дорогие, медленные и плохо масштабируются.</p></div>
-      <div class='card span4'><h3 class='h3'>Решение</h3><p class='muted'>AI-модель + товар + сценарий = фото, Reels и UGC без студии, моделей и логистики.</p></div>
-      <div class='card span4'><h3 class='h3'>Монетизация</h3><p class='muted'>Кредиты, подписка Pro/Premium, пакеты кампаний, B2B-доступ для брендов и агентств.</p></div>
-      <div class='card span6'><h3 class='h3'>Технологический moat</h3><p class='muted'>Product-aware пайплайн, identity pack, Grok prompt engine, Wan I2V, try-on, админка и Mini App.</p></div>
-      <div class='card span6'><h3 class='h3'>Roadmap</h3><p class='muted'>v10: demo web. v11: campaign batches. v12: personal LoRA на модель. v13: B2B кабинет команды.</p></div>
+    <section class='section'><h2 class='h2'>Трекшен на платформе</h2><div class='grid'>{_kpi_cards(s)}</div><p class='small' style='margin-top:14px'>Данные читаются вживую из Supabase в момент открытия страницы — это не мокап.</p></section>
+    <section class='section grid'>
+      <div class='card span6'><h3 class='h3'>Проблема</h3><p class='muted'>Перформанс-маркетингу нужны десятки креативов в неделю. Классическая съёмка — это модель, локация, фотограф, логистика и 1–3 недели на цикл. Не масштабируется и дорого на тест гипотез.</p></div>
+      <div class='card span6'><h3 class='h3'>Решение</h3><p class='muted'>Контент-завод: виртуальная модель с постоянным лицом + фото товара + сценарий → готовый рекламный кадр, Reels и контент-план за минуты, без студии.</p></div>
+      <div class='card span4'><h3 class='h3'>Кому продаём</h3><p class='muted'>Селлеры WB/Ozon, D2C-бренды, SMM-агентства, инфлюенс-команды. Боль и бюджет на контент уже есть.</p></div>
+      <div class='card span4'><h3 class='h3'>Монетизация</h3><p class='muted'>Кредиты за генерацию, подписки Pro/Premium, пакеты кампаний, B2B-доступ для агентств и брендов.</p></div>
+      <div class='card span4'><h3 class='h3'>Технологический ров</h3><p class='muted'>Product-aware пайплайн (товар не перерисовывается), стабильное лицо модели через identity DNA, Grok prompt engine, Wan I2V, try-on.</p></div>
+      <div class='card span6'><h3 class='h3'>Стек</h3><p><span class='tag green'>fal.ai</span> <span class='tag'>FLUX LoRA</span> <span class='tag'>Wan I2V</span> <span class='tag'>FASHN try-on</span> <span class='tag'>Grok</span> <span class='tag'>Supabase</span> <span class='tag'>Railway</span> <span class='tag'>aiogram</span></p><p class='small' style='margin-top:10px'>Telegram-бот + Web Studio + Mini App на одной кодовой базе.</p></div>
+      <div class='card span6'><h3 class='h3'>Roadmap</h3><div class='check'><div><span class='dot'></span><span>Сейчас: demo web, product-aware, Reels.</span></div><div><span class='dot'></span><span>Next: батч-кампании (серия креативов в один клик).</span></div><div><span class='dot'></span><span>Затем: персональная LoRA на модель бренда.</span></div><div><span class='dot'></span><span>B2B-кабинет команды и API для агентств.</span></div></div></div>
     </section>
     """
-    return HTMLResponse(_base("IIComp Investor Demo", body))
+    return HTMLResponse(_base("IIComp · Investor Brief", body))
 
 
 @app.get("/studio", response_class=HTMLResponse)

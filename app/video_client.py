@@ -21,9 +21,26 @@ VIDEO_NEGATIVE = (
 )
 
 
+def _normalize_model(model: str) -> str:
+    """fal endpoint IDs for Wan are namespaced under `fal-ai/`. The env/config
+    often holds the short form (`wan/v2.2-a14b/image-to-video/lora`), which
+    404s on fal. Normalize to the full endpoint ID. Kling/other endpoints that
+    already carry their own prefix are left untouched."""
+    m = (model or "").strip().strip("/")
+    if m.startswith("wan/"):
+        m = "fal-ai/" + m
+    return m
+
+
 def _video_model() -> str:
-    # VIDEO_MODEL_I2V has priority in v8, fallback to legacy FAL_VIDEO_MODEL.
-    return (settings.video_model_i2v or settings.fal_video_model or "wan/v2.2-a14b/image-to-video/lora").strip()
+    # VIDEO_MODEL_I2V has priority, fallback to legacy FAL_VIDEO_MODEL.
+    return _normalize_model(
+        settings.video_model_i2v or settings.fal_video_model or "wan/v2.2-a14b/image-to-video/lora"
+    )
+
+
+def _alt_video_model() -> str:
+    return _normalize_model(settings.video_model_i2v_alt or "")
 
 
 def _wan_aspect(aspect_ratio: str) -> str:
@@ -74,11 +91,35 @@ async def generate_video_from_image(
         "subtle commercial motion, natural blinking, slight camera push-in, "
         "realistic social media video, brand-safe premium ad"
     )
-    model = _video_model()
-    model_l = model.lower()
+    primary = _video_model()
+    alt = _alt_video_model()
+    # Try primary, then alt (if configured and different). This is what makes
+    # video resilient: if Wan LoRA is overloaded/unavailable, we still ship a clip.
+    candidates = [m for m in (primary, alt) if m]
+    seen: set[str] = set()
+    candidates = [m for m in candidates if not (m in seen or seen.add(m))]
 
+    last_err: Exception | None = None
+    for idx, model in enumerate(candidates):
+        arguments = _build_args(model, image_url, video_prompt, duration, aspect_ratio)
+        log.info(
+            "fal.ai video run [%d/%d]: model=%s image=%s duration=%s aspect=%s",
+            idx + 1, len(candidates), model, image_url[:80], duration, aspect_ratio,
+        )
+        try:
+            result = await fal_client.subscribe_async(model, arguments=arguments, with_logs=False)
+            return _first_video_url(result)
+        except Exception as e:
+            last_err = e
+            log.warning("video model %s failed (%s); trying next", model, str(e)[:200])
+
+    raise RuntimeError(f"all video models failed: {str(last_err)[:300]}")
+
+
+def _build_args(model: str, image_url: str, video_prompt: str, duration: int, aspect_ratio: str) -> dict:
+    model_l = model.lower()
     if "wan/" in model_l:
-        arguments = {
+        return {
             "image_url": image_url,
             "prompt": video_prompt,
             "negative_prompt": VIDEO_NEGATIVE,
@@ -96,19 +137,10 @@ async def generate_video_from_image(
             "video_quality": "high",
             "video_write_mode": "balanced",
         }
-    else:
-        # Kling / Seedance / other simple I2V endpoints usually accept duration/aspect_ratio.
-        arguments = {
-            "image_url": image_url,
-            "prompt": video_prompt,
-            "duration": str(duration),
-            "aspect_ratio": aspect_ratio,
-        }
-
-    log.info("fal.ai video run: model=%s image=%s duration=%s aspect=%s", model, image_url[:80], duration, aspect_ratio)
-    result = await fal_client.subscribe_async(
-        model,
-        arguments=arguments,
-        with_logs=False,
-    )
-    return _first_video_url(result)
+    # Kling / Seedance / other simple I2V endpoints usually accept duration/aspect_ratio.
+    return {
+        "image_url": image_url,
+        "prompt": video_prompt,
+        "duration": str(duration),
+        "aspect_ratio": aspect_ratio,
+    }
