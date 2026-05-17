@@ -205,3 +205,17 @@ def video_durations_kb(gen_id: int, scenario_key: str, fmt_key: str) -> InlineKe
         kb.button(text=label, callback_data=f"fv:gen:{gen_id}:{scenario_key}:{fmt_key}:{dur_key}")
     kb.adjust(1)
     return kb.as_markup()
+
+
+def content_plan_actions_kb(model_id: int, product_id: int = 0) -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text="📸 Сгенерировать 3 поста", callback_data=f"fc:plan_action:posts:{model_id}:{product_id}")],
+        [InlineKeyboardButton(text="📢 Рекламный кадр", callback_data=f"fc:photo:{model_id}:{product_id}")],
+        [InlineKeyboardButton(text="🎥 Reels: сначала выбрать кадр", callback_data=f"fc:plan_action:reels:{model_id}:{product_id}")],
+    ]
+    if product_id:
+        rows.append([InlineKeyboardButton(text="🎯 Точнее сохранить товар", callback_data=f"fc:photo:{model_id}:{product_id}")])
+    else:
+        rows.append([InlineKeyboardButton(text="📦 Загрузить товар", callback_data="fp:new")])
+    rows.append([InlineKeyboardButton(text="👤 К модели", callback_data=f"fm:open:{model_id}"), InlineKeyboardButton(text="◀ В меню", callback_data="menu")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)

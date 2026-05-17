@@ -55,9 +55,17 @@ async def cmd_admin(message: Message, command: CommandObject):
         if not settings.admin_web_token:
             await message.answer("ADMIN_WEB_TOKEN не задан в Railway. Добавь секретный токен для админки.")
             return
-        url = settings.web_public_url.rstrip("/") + "/admin?token=" + settings.admin_web_token
-        mini = settings.web_public_url.rstrip("/") + "/mini"
-        await message.answer(f"🛠 Web admin:\n{url}\n\n📲 Mini App:\n{mini}")
+        base = settings.web_public_url.rstrip("/")
+        url = base + "/admin?token=" + settings.admin_web_token
+        mini = base + "/mini"
+        studio = base + "/studio"
+        pitch = base + "/pitch"
+        await message.answer(
+            "🛠 Web admin:\n" + url +
+            "\n\n🏭 Studio Web App:\n" + studio +
+            "\n\n📲 Mini App:\n" + mini +
+            "\n\n📊 Investor Pitch:\n" + pitch
+        )
         return
 
     if sub == "grant" and len(args) == 3:

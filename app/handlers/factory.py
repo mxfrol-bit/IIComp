@@ -25,7 +25,7 @@ from app.factory_keyboards import (
     model_niche_kb, model_style_kb, models_kb, photo_categories_kb,
     photo_scenarios_kb, product_card_kb, product_category_kb, product_upload_kb,
     products_kb, pick_model_for_product_kb, after_photo_kb, video_categories_kb,
-    video_durations_kb, video_formats_kb, video_scenarios_kb,
+    video_durations_kb, video_formats_kb, video_scenarios_kb, content_plan_actions_kb,
 )
 from app.factory_prompts import (
     build_hero_prompt, build_identity_pack_prompt, build_photo_prompt, build_video_prompt,
@@ -824,7 +824,41 @@ async def content_plan(cb: CallbackQuery):
     text = render_plan(plan)
     if len(text) > 3800:
         text = text[:3800] + "\n\n…"
-    await placeholder.edit_text(text, reply_markup=main_menu_kb())
+    await placeholder.edit_text(text, reply_markup=content_plan_actions_kb(model_id, product_id or 0))
+
+
+@router.callback_query(F.data.startswith("fc:plan_action:"))
+async def content_plan_action(cb: CallbackQuery):
+    _, _, action, model_id_str, product_id_str = cb.data.split(":")
+    model_id = int(model_id_str)
+    product_id = int(product_id_str)
+    user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
+    model = db.get_ai_model(model_id, user_id=user["id"])
+    if not model:
+        await cb.answer("Модель не найдена", show_alert=True)
+        return
+
+    if action == "posts":
+        await cb.answer("Выбираем сценарий для поста")
+        await cb.message.answer(
+            "📸 Начнём с первого кадра серии.\n\n"
+            "Выбери категорию съёмки. Я советую: Instagram/lifestyle для образа модели, "
+            "Product Ads/Food/Beauty — если работаешь с товаром.",
+            reply_markup=photo_categories_kb(model_id, product_id),
+        )
+        return
+
+    if action == "reels":
+        await cb.answer("Сначала нужен ключевой кадр")
+        await cb.message.answer(
+            "🎥 Для Reels сначала нужен красивый ключевой кадр.\n\n"
+            "Сгенерируй фото, выбери лучший результат, потом под ним нажми «Сделать Reels/видео».\n"
+            "Так качество видео будет выше, а товар/лицо не поплывут.",
+            reply_markup=photo_categories_kb(model_id, product_id),
+        )
+        return
+
+    await cb.answer()
 
 
 @router.callback_query(F.data == "private:home")

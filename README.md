@@ -127,3 +127,37 @@ FAL_VIDEO_MODEL=fal-ai/kling-video/v2.1/standard/image-to-video
 ```
 
 Но для качества дальше тестируем Wan.
+
+## v10 Investor Web App
+
+Добавлены отдельные web-страницы для показа инвесторам:
+
+- `/` — публичный landing продукта.
+- `/studio` — мощный Web App / Studio Dashboard: модели, товары, кампании, видео, качество.
+- `/pitch` — investor demo page: сценарий показа, ценность, roadmap.
+- `/mini` — Telegram Mini App интерфейс.
+- `/admin?token=...` — live admin panel.
+
+В Telegram админ может получить ссылки командой:
+
+```text
+/admin web
+```
+
+Railway variables:
+
+```env
+WEB_ENABLED=true
+WEB_PUBLIC_URL=https://iicomp-production.up.railway.app
+ADMIN_WEB_TOKEN=your_long_secret
+```
+
+Для демо завтра показывать так:
+
+1. Открыть `/pitch` и объяснить продукт за 60 секунд.
+2. Открыть `/studio` и показать, что это не бот, а web-платформа.
+3. Создать AI-модель в Telegram.
+4. Загрузить товар.
+5. Сгенерировать рекламный кадр.
+6. Сделать Reels.
+7. Вернуться в `/admin` и показать, что всё сохраняется в систему.
