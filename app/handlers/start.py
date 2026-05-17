@@ -7,6 +7,7 @@ from aiogram.types import (
 )
 
 from app import db
+from app.config import settings
 from app.keyboards import age_gate_kb, back_to_menu_kb, content_home_kb, main_menu_kb
 
 router = Router()
@@ -15,42 +16,43 @@ log = logging.getLogger(__name__)
 
 WELCOME = (
     "Привет 👋\n\n"
-    "Это сервис, который создаёт фотографии твоего AI-персонажа в любых сценах "
-    "и развивает с тобой историю в формате интерактивного сериала.\n\n"
+    "Это интерактивная AI-история: сначала ты создаёшь героиню, "
+    "она сама пишет первой, потом вы знакомитесь, общаетесь, проходите сцены, "
+    "открываете фото, комиксы/видео и развиваете отношения как в игре.\n\n"
     "Перед началом подтверди, что тебе **18+**."
 )
 
+
 MENU_TEXT = (
     "🏠 *Главное меню*\n\n"
-    "📺 Сериал — интерактивная история с героиней\n"
-    "✨ Создать — сделай свою героиню\n"
-    "📸 Мои персонажи — генерация фото в разных сценах\n"
-    "❤️ Романтика — свидания, поцелуи, тёплые сцены\n"
-    "🔞 Soft 18+ — купальники, бельё, халат, без explicit\n"
-    "🎁 Что нового — последние твои фото\n"
-    "🤝 Друзья — позови друзей и получи бонусные фото\n"
-    "💎 Подписка — Pro / Premium тарифы\n"
-    "ℹ️ Баланс — сколько фото осталось"
+    "💕 Продолжить историю — вернуться к активной героине\n"
+    "✨ Создать героиню — старт игры и первое фото\n"
+    "👤 Моя героиня — карточка, чат, первая встреча, сцены\n"
+    "🖼 Галерея — последние фото и моменты\n"
+    "🤝 Друзья — тестовая/реферальная ссылка\n"
+    "💎 Подписка — Pro / Premium\n"
+    "ℹ️ Баланс — кредиты и тариф\n\n"
+    "Логика теперь такая: *создал → она написала первой → первая встреча → диалог → романтика → soft 18+ позже*."
 )
+
 
 HELP_TEXT = (
     "❓ *Помощь*\n\n"
+    "*Главный путь:*\n"
+    "1️⃣ Нажми «✨ Создать героиню»\n"
+    "2️⃣ Выбери имя, возраст, волосы, телосложение и стиль\n"
+    "3️⃣ Бот сам создаст первое фото персонажа\n"
+    "4️⃣ Героиня сама напишет первой\n"
+    "5️⃣ Выбирай: ответить, первая встреча, попросить фото\n"
+    "6️⃣ Дальше просто пиши обычными сообщениями — это чат-игра\n\n"
+    "*Как получить фото:* попроси в диалоге «пришли селфи» или нажми «📸 Попросить фото».\n"
+    "*Как получить видео:* сначала сгенерируй фото, потом нажми под ним «🎥 Оживить фото».\n"
+    "*Soft 18+:* открывается позже: нужен Pro/Premium и прогресс отношений. Без explicit-контента.\n\n"
     "*Команды:*\n"
     "/start — главное меню\n"
-    "/help — это сообщение\n"
-    "/balance — мой баланс\n"
-    "/menu — главное меню\n\n"
-    "*Как пользоваться:*\n\n"
-    "1️⃣ Создай персонажа в меню «✨ Создать»\n"
-    "2️⃣ Открой её в «📸 Мои персонажи»\n"
-    "3️⃣ Жми «📸 Сгенерировать фото» → выбери сцену\n"
-    "4️⃣ Выбирай раздел: обычные сцены, романтика или soft 18+\n"
-    "5️⃣ Жди ~15 секунд — фото придёт в чат\n"
-    "6️⃣ Можешь нажать «🔄 Ещё фото в этой сцене» — другой ракурс\n\n"
-    "*Сериал:* открой «📺 Сериал» в меню — там история с готовой героиней Анной, "
-    "проходишь биты, делаешь выборы, открываешь следующие эпизоды.\n\n"
-    "*Бонусы:* пригласи друга через «🤝 Друзья» — получите по 5 фото.\n\n"
-    "Если что-то сломалось — напиши @ваш_саппорт."
+    "/menu — меню\n"
+    "/balance — баланс\n"
+    "/help — помощь"
 )
 
 
@@ -62,6 +64,8 @@ async def on_start_with_payload(message: Message, command: CommandObject):
     user = db.get_or_create_user(message.from_user.id, message.from_user.username)
     payload = command.args or ""
 
+    promo_message = None
+
     if payload.startswith("ref_"):
         try:
             referrer_id = int(payload[4:])
@@ -69,11 +73,30 @@ async def on_start_with_payload(message: Message, command: CommandObject):
             log.info("Referral linked: referrer=%s referred=%s", referrer_id, user["id"])
         except (ValueError, Exception) as e:
             log.warning("Bad referral payload: %s — %s", payload, e)
+    elif payload.lower() == settings.promo_ref_code.lower():
+        try:
+            granted, credits = db.claim_promo_bonus(
+                user_id=user["id"],
+                code=settings.promo_ref_code,
+                amount=settings.promo_ref_bonus_credits,
+            )
+            if granted:
+                promo_message = (
+                    f"🎁 Тестовый бонус активирован: +{settings.promo_ref_bonus_credits} кредитов.\n"
+                    f"Баланс: {credits} кредитов.\n\n"
+                )
+            else:
+                promo_message = (
+                    f"🎁 Тестовый бонус уже был активирован ранее.\n"
+                    f"Баланс: {credits} кредитов.\n\n"
+                )
+        except Exception as e:
+            log.warning("Promo payload failed: %s — %s", payload, e)
 
     if not user["age_confirmed"]:
-        await message.answer(WELCOME, reply_markup=age_gate_kb(), parse_mode="Markdown")
+        await message.answer((promo_message or "") + WELCOME, reply_markup=age_gate_kb(), parse_mode="Markdown")
         return
-    await message.answer(MENU_TEXT, reply_markup=main_menu_kb(), parse_mode="Markdown")
+    await message.answer((promo_message or "") + MENU_TEXT, reply_markup=main_menu_kb(), parse_mode="Markdown")
 
 
 @router.message(CommandStart())
@@ -244,14 +267,22 @@ async def on_referral(cb: CallbackQuery):
     user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
     bot = await cb.bot.get_me()
     ref_link = f"https://t.me/{bot.username}?start=ref_{user['id']}"
+    test_link = f"https://t.me/{bot.username}?start={settings.promo_ref_code}"
     invited = db.count_referrals(user["id"])
+    admin_extra = ""
+    if db.is_admin(user["id"]):
+        admin_extra = (
+            "\n\n🧪 *Тестовая ссылка на 2000 кредитов:*\n"
+            f"`{test_link}`\n"
+            "Можно раздавать команде. Каждый пользователь может активировать её один раз."
+        )
 
     text = (
         "🤝 *Позови друзей*\n\n"
-        f"Твоя реферальная ссылка:\n`{ref_link}`\n\n"
-        "💚 За каждого друга, который перейдёт по ссылке и подтвердит 18+, "
-        "ты получаешь *+5 бонусных фото* на баланс.\n\n"
+        f"Твоя обычная реферальная ссылка:\n`{ref_link}`\n\n"
+        "💚 Обычная рефералка сейчас даёт бонус пригласившему после первой генерации друга.\n"
         f"Уже пригласил: *{invited}* человек."
+        f"{admin_extra}"
     )
     try:
         await cb.message.edit_text(text, reply_markup=back_to_menu_kb(), parse_mode="Markdown")

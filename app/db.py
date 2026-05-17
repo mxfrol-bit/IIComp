@@ -202,6 +202,33 @@ def count_referrals(user_id: int) -> int:
     return res.count or 0
 
 
+# ---------- Promo / test invite links ----------
+
+def claim_promo_bonus(user_id: int, code: str, amount: int) -> tuple[bool, int]:
+    """Grant one-time promo credits to the user.
+
+    Returns (granted, current_credits).
+    """
+    code = (code or "").strip().lower()
+    if not code or amount <= 0:
+        user = supabase.table("users").select("credits").eq("id", user_id).execute().data[0]
+        return False, int(user.get("credits") or 0)
+
+    existing = supabase.table("promo_claims").select("id").eq("user_id", user_id).eq("code", code).execute()
+    if existing.data:
+        user = supabase.table("users").select("credits").eq("id", user_id).execute().data[0]
+        return False, int(user.get("credits") or 0)
+
+    grant_credits(user_id, amount, "promo_bonus", meta={"code": code})
+    supabase.table("promo_claims").insert({
+        "user_id": user_id,
+        "code": code,
+        "credits": amount,
+    }).execute()
+    user = supabase.table("users").select("credits").eq("id", user_id).execute().data[0]
+    return True, int(user.get("credits") or 0)
+
+
 # ---------- Admin ----------
 
 def is_admin(user_id: int) -> bool:

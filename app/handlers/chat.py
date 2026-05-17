@@ -95,11 +95,10 @@ async def on_chat_start(cb: CallbackQuery):
     db.set_active_character(user["id"], char_id, enabled=True)
     score = db.get_relationship(user["id"])
     text = (
-        f"💬 *Чат с {char['name']} включён*\n\n"
-        f"Шкала отношений: *{score}/100*\n\n"
-        "Теперь просто пиши обычным сообщением.\n"
-        "Можно попросить: «пришли селфи», «давай сыграем сцену», «как прошёл день?».\n\n"
-        "Фото и видео остаются в рамках soft/romantic режима."
+        f"💬 *{char['name']} на связи*\n\n"
+        f"Отношения: *{score}/100*\n\n"
+        "Пиши ей обычным сообщением — как в чате. Она отвечает от своего характера и помнит последние реплики.\n\n"
+        "Можно написать: «как твой день?», «давай встретимся», «пришли селфи», «сыграем сцену»."
     )
     try:
         await cb.message.edit_text(text, reply_markup=chat_home_kb(char_id), parse_mode="Markdown")

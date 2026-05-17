@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.config import settings
-from app.handlers import admin, billing, character, chat, generate, start, story, video
+from app.handlers import admin, billing, character, chat, game, generate, start, story, video
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +27,7 @@ async def main() -> None:
         admin.router,
         story.router,
         character.router,
+        game.router,
         generate.router,
         video.router,
         billing.router,

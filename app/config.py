@@ -42,5 +42,9 @@ class Settings(BaseSettings):
     fal_video_model: str = "fal-ai/kling-video/v1/standard/image-to-video"
     video_cost_credits: int = 3
 
+    # Test/promo referral link. Example: https://t.me/BOT?start=beta2000
+    promo_ref_code: str = "beta2000"
+    promo_ref_bonus_credits: int = 2000
+
 
 settings = Settings()

@@ -248,3 +248,18 @@ alter table public.generations add column if not exists video_status text defaul
 alter table public.generations add column if not exists video_prompt text;
 
 create index if not exists idx_generations_video on public.generations(user_id, video_status, created_at desc);
+
+-- ============================================================
+-- Promo/test links: one-time 2000 credits bonus
+-- ============================================================
+create table if not exists public.promo_claims (
+    id          bigserial primary key,
+    user_id     bigint references public.users(id) on delete cascade,
+    code        text not null,
+    credits     int not null default 0,
+    created_at  timestamptz default now(),
+    unique(user_id, code)
+);
+
+create index if not exists idx_promo_claims_user on public.promo_claims(user_id, created_at desc);
+create index if not exists idx_promo_claims_code on public.promo_claims(code, created_at desc);

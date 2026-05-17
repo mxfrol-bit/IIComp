@@ -1,19 +1,25 @@
+import logging
 import random
+import time
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, URLInputFile
 
 from app import db
+from app.game_flow import build_intro_avatar_prompt, first_companion_message, SOFT18_RELATIONSHIP_MIN
+from app.image_client import generate_image
 from app.keyboards import (
     age_kb, body_kb, character_detail_kb, characters_kb, delete_confirm_kb,
-    hair_kb, locked_soft18_kb, presets_kb, style_kb,
+    hair_kb, intro_after_avatar_kb, locked_soft18_kb, presets_kb,
+    soft18_progress_locked_kb, style_kb,
 )
 from app.persona import AGE_RANGES, BODY, HAIR, STYLE
 from app.presets import MODE_TITLES
 from app.states import CharacterCreation
 
 router = Router()
+log = logging.getLogger(__name__)
 
 
 @router.callback_query(F.data == "char:new")
@@ -88,19 +94,52 @@ async def on_style(cb: CallbackQuery, state: FSMContext):
         "style_key": data["style_key"], "style_desc": data["style_desc"], "style_label": data["style_label"],
     }
     char = db.create_character(user["id"], data["name"], persona, seed)
+    db.set_active_character(user["id"], char["id"], enabled=True)
 
-    summary = (
-        f"✨ *Готово!*\n\n"
-        f"Героиня: *{char['name']}*\n\n"
-        f"📅 Возраст: {data['age_label']}\n"
-        f"💇 Волосы: {data['hair_label']}\n"
-        f"👤 Телосложение: {data['body_label']}\n"
-        f"👗 Стиль: {data['style_label']}\n\n"
-        f"Жми «📸 Сгенерировать фото» — выберешь сцену."
+    await cb.message.edit_text(
+        f"✨ *{char['name']} создана.*\n\n"
+        "Сейчас сделаю её первое фото — как стартовую карточку персонажа в игре…",
+        parse_mode="Markdown",
     )
-    await cb.message.edit_text(summary, reply_markup=character_detail_kb(char["id"]),
-                               parse_mode="Markdown")
     await cb.answer()
+
+    prompt = build_intro_avatar_prompt(char)
+    gen = db.create_generation(user["id"], char["id"], "intro_avatar", prompt)
+    first_text = first_companion_message(char)
+    db.add_chat_message(user["id"], char["id"], "assistant", first_text, event_type="first_message")
+
+    try:
+        image_url = await generate_image(prompt=prompt, seed=seed)
+        dest_path = f"u{user['id']}/c{char['id']}/intro_avatar_{int(time.time())}.jpg"
+        try:
+            stored_url = await db.upload_image_from_url(image_url, dest_path)
+        except Exception as e:
+            log.warning("Intro avatar upload failed, using provider URL: %s", e)
+            stored_url = image_url
+
+        db.update_generation(gen["id"], status="done", image_url=stored_url)
+        db.set_character_avatar(char["id"], stored_url)
+        db.set_character_reference(char["id"], stored_url)
+
+        await cb.message.answer_photo(
+            URLInputFile(stored_url),
+            caption=(
+                f"💕 *{char['name']}*\n"
+                f"{data['age_label']} · {data['hair_label']} · {data['body_label']} · {data['style_label']}\n\n"
+                f"{first_text}"
+            ),
+            reply_markup=intro_after_avatar_kb(char["id"]),
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        log.exception("Intro avatar generation failed")
+        db.update_generation(gen["id"], status="failed", error=str(e)[:500])
+        await cb.message.answer(
+            f"💕 *{char['name']} создана.*\n\n"
+            f"Фото не получилось, но диалог уже начался.\n\n{first_text}",
+            reply_markup=intro_after_avatar_kb(char["id"]),
+            parse_mode="Markdown",
+        )
 
 
 @router.callback_query(F.data == "char:list")
@@ -181,19 +220,32 @@ async def on_scenes(cb: CallbackQuery):
         await cb.answer("Это не твой персонаж", show_alert=True)
         return
 
-    if mode == "soft18" and user.get("tier") not in ("pro", "premium") and not user.get("is_admin"):
-        text = (
-            "🔞 *Soft 18+*\n\n"
-            "Этот раздел: романтика, купальники, бельё, халат, поцелуи — "
-            "без explicit-контента.\n\n"
-            "Доступ открыт на тарифах *Pro* и *Premium*."
-        )
-        try:
-            await cb.message.edit_text(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
-        except Exception:
-            await cb.message.answer(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
-        await cb.answer("Раздел доступен на Pro / Premium", show_alert=True)
-        return
+    if mode == "soft18" and not user.get("is_admin"):
+        score = db.get_relationship(user["id"])
+        if user.get("tier") not in ("pro", "premium"):
+            text = (
+                "🔞 *Soft 18+ откроется позже*\n\n"
+                "Сначала создай контакт с персонажем: общение, первая встреча, романтические сцены.\n\n"
+                "Для доступа нужен тариф *Pro* или *Premium*."
+            )
+            try:
+                await cb.message.edit_text(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
+            except Exception:
+                await cb.message.answer(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
+            await cb.answer("Нужен Pro / Premium", show_alert=True)
+            return
+        if score < SOFT18_RELATIONSHIP_MIN:
+            text = (
+                "🔞 *Soft 18+ пока закрыт*\n\n"
+                f"Отношения: *{score}/100*. Нужно хотя бы *{SOFT18_RELATIONSHIP_MIN}/100*.\n\n"
+                "Поговори с ней, пройди первую встречу и романтические сцены — раздел откроется логично по сюжету."
+            )
+            try:
+                await cb.message.edit_text(text, reply_markup=soft18_progress_locked_kb(char_id), parse_mode="Markdown")
+            except Exception:
+                await cb.message.answer(text, reply_markup=soft18_progress_locked_kb(char_id), parse_mode="Markdown")
+            await cb.answer("Сначала прокачай отношения", show_alert=True)
+            return
 
     db.set_content_mode(user["id"], mode if mode in ("safe", "romantic", "soft18") else "safe")
     title = MODE_TITLES.get(mode, "🎬 Сцены")
