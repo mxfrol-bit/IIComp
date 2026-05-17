@@ -7,13 +7,21 @@ from aiogram.types import CallbackQuery, URLInputFile
 
 from app import db
 from app.image_client import generate_image
-from app.keyboards import after_generation_kb, presets_kb
+from app.keyboards import after_generation_kb, billing_kb, presets_kb
 from app.moderation import ModerationError, check_prompt
 from app.persona import build_base_prompt
 from app.presets import PRESETS, build_prompt
 
 router = Router()
 log = logging.getLogger(__name__)
+
+
+def _has_unlimited(user: dict) -> bool:
+    return bool(user.get("is_admin") or user.get("tier") == "premium")
+
+
+def _can_use_soft18(user: dict) -> bool:
+    return bool(user.get("is_admin") or user.get("tier") in ("pro", "premium"))
 
 
 @router.callback_query(F.data.startswith("gen:"))
@@ -37,7 +45,21 @@ async def on_generate(cb: CallbackQuery):
         await cb.answer("Неизвестная сцена", show_alert=True)
         return
 
-    if user["credits"] <= 0:
+    preset = PRESETS[preset_key]
+    rating = preset.get("rating", "safe")
+    mode = rating if rating in ("safe", "romantic", "soft18") else "safe"
+
+    if rating == "soft18" and not _can_use_soft18(user):
+        await cb.message.answer(
+            "🔞 Эта сцена доступна на тарифах *Pro* и *Premium*.\n"
+            "Контент: soft 18+ без explicit.",
+            reply_markup=billing_kb(),
+            parse_mode="Markdown",
+        )
+        await cb.answer("Нужен Pro / Premium", show_alert=True)
+        return
+
+    if not _has_unlimited(user) and user["credits"] <= 0:
         await cb.answer(
             "🚫 Лимит на сегодня исчерпан.\nКупи Pro в меню «💎 Подписка».",
             show_alert=True,
@@ -45,8 +67,6 @@ async def on_generate(cb: CallbackQuery):
         return
 
     persona_base = build_base_prompt(char["persona"])
-    # Use a fresh seed each time so reroll gives a different image,
-    # but keep the persona base anchored — same character, different shot.
     seed = random.randint(1, 2_000_000_000)
     prompt = build_prompt(persona_base, preset_key)
 
@@ -56,45 +76,42 @@ async def on_generate(cb: CallbackQuery):
         await cb.answer(e.reason, show_alert=True)
         return
 
-    if not db.spend_credit(user["id"]):
-        await cb.answer("Лимит исчерпан", show_alert=True)
-        return
+    credit_spent = False
+    if not _has_unlimited(user):
+        if not db.spend_credit(user["id"]):
+            await cb.answer("Лимит исчерпан", show_alert=True)
+            return
+        credit_spent = True
 
     gen = db.create_generation(user["id"], char_id, preset_key, prompt)
 
     await cb.answer("Генерирую…")
     placeholder = await cb.message.answer(
-        f"🎨 Создаю фото «{PRESETS[preset_key]['label']}» — обычно 10–15 секунд…"
+        f"🎨 Создаю фото «{preset['label']}» — обычно 10–15 секунд…"
     )
 
     try:
         image_url = await generate_image(prompt=prompt, seed=seed)
 
-        # Upload to Supabase Storage for permanent URL
         dest_path = f"u{user['id']}/c{char_id}/{int(time.time())}.jpg"
         try:
             stored_url = await db.upload_image_from_url(image_url, dest_path)
         except Exception as e:
-            log.warning("Storage upload failed, using fal URL: %s", e)
+            log.warning("Storage upload failed, using provider URL: %s", e)
             stored_url = image_url
 
         db.update_generation(gen["id"], status="done", image_url=stored_url)
-
-        # First generation becomes the avatar
         db.set_character_avatar(char_id, stored_url)
 
-        # Save first generation as character reference (for future PuLID upgrade)
         if not char.get("reference_url"):
             db.set_character_reference(char_id, stored_url)
 
-        # Grant referral bonus if applicable (first successful generation triggers)
         granted = db.grant_referral_bonus(user["id"], bonus_credits=5)
         if granted:
             log.info("Referral bonus granted to user %s", granted)
 
-        # Get fresh credit count
         fresh = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
-        remaining = fresh["credits"]
+        remaining = "∞" if _has_unlimited(fresh) else str(fresh["credits"])
 
         try:
             await placeholder.delete()
@@ -104,7 +121,7 @@ async def on_generate(cb: CallbackQuery):
         await cb.message.answer_photo(
             URLInputFile(stored_url),
             caption=(
-                f"💕 *{char['name']}* — {PRESETS[preset_key]['label']}\n"
+                f"💕 *{char['name']}* — {preset['label']}\n"
                 f"Осталось фото сегодня: *{remaining}*"
             ),
             parse_mode="Markdown",
@@ -114,10 +131,9 @@ async def on_generate(cb: CallbackQuery):
     except Exception as e:
         log.exception("Generation failed")
         db.update_generation(gen["id"], status="failed", error=str(e)[:500])
-        # Refund the credit
-        db.grant_credits(user["id"], 1, "refund_failed_generation", {"gen_id": gen["id"]})
+        if credit_spent:
+            db.grant_credits(user["id"], 1, "refund_failed_generation", {"gen_id": gen["id"]})
 
-        # Detect common reasons
         err_str = str(e).lower()
         if "safety" in err_str or "nsfw" in err_str or "filter" in err_str:
             msg = (
@@ -130,6 +146,6 @@ async def on_generate(cb: CallbackQuery):
                 "Кредит вернул, попробуй ещё раз или другую сцену."
             )
         try:
-            await placeholder.edit_text(msg, reply_markup=presets_kb(char_id))
+            await placeholder.edit_text(msg, reply_markup=presets_kb(char_id, mode))
         except Exception:
-            await cb.message.answer(msg, reply_markup=presets_kb(char_id))
+            await cb.message.answer(msg, reply_markup=presets_kb(char_id, mode))

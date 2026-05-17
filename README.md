@@ -13,15 +13,15 @@ Telegram bot that delivers an interactive story serial — episode by episode, w
 
 ## User-facing features
 
-- **18+ age gate** на /start
+- **18+ age gate** на /start + timestamp подтверждения в БД
 - **Создание персонажа** (FSM: имя → возраст → волосы → телосложение → стиль)
 - **Карточка персонажа** с аватаркой (первое фото) и инфо
 - **Удаление персонажа** с подтверждением
-- **30 пресетов сцен** (кафе / прогулка / спортзал / постель / парк и т.д.)
+- **46+ пресетов сцен**: обычные, романтика и soft 18+ без explicit
 - **🔄 Рерол сцены** — кнопка под фото для перегенерации с новым seed
 - **🎁 Что нового** — последние 5 фото юзера в одном экране
 - **🤝 Реферальная программа** — t.me/<bot>?start=ref_<id>, +5 фото за каждого приглашённого
-- **💎 Тарифы Pro/Premium** через Telegram Stars (399⭐ / 1490⭐)
+- **💎 Тарифы Pro/Premium** через Telegram Stars (399⭐ / 1490⭐); Pro открывает soft 18+, Premium работает без дневного лимита
 - **📺 Story-режим** с эпизодами, битами, выборами, платными анлоками
 - **❓ /help** с описанием всего функционала
 - **ℹ️ /balance** — быстрый баланс одной командой
@@ -55,6 +55,7 @@ update users set is_admin = true where tg_username = 'твой_username';
 #    supabase/schema.sql
 #    supabase/002_story_engine.sql
 #    supabase/003_features.sql
+#    supabase/004_content_modes.sql
 # Create Storage bucket "generations" — public read access
 
 # 2. Env
@@ -85,10 +86,20 @@ railway up
 ```
 Long-polling, no webhooks. Single process.
 
+## Content modes
+
+The bot has three content levels:
+
+- **safe** — обычные фото: кафе, прогулки, спорт, путешествия, дом.
+- **romantic** — свидания, поцелуи, объятия, утренние сообщения. Доступно после 18+ gate.
+- **soft18** — купальники, бельё, халат, утро под пледом. Только Pro/Premium. Встроенный prompt-filter блокирует explicit terms, несовершеннолетних, насилие и публичных персон.
+
+The project intentionally does not include explicit-generation flows.
+
 ## Why fal.ai
 
-- Latency 8–15s vs Replicate's 25–40s — same Flux model, different infra
-- Same `fal-ai/flux-lora` endpoint accepts public LoRA URLs (use Hugging Face — Civitai server-side downloads are unreliable from fal's IPs)
+- Latency 8–15s vs Replicate's 25–40s — same Flux-style workflow, different infra
+- `fal-ai/flux-lora` accepts public LoRA URLs. Hugging Face is the safest default; Civitai/Civitai.red can be used with `CIVITAI_API_TOKEN`, but server-side downloads may depend on Civitai access rules
 - Pricing per megapixel (~$0.025 for portrait_4_3); comparable to Replicate per-image
 - `enable_safety_checker: True` is on by default — leave it on
 
@@ -233,3 +244,19 @@ where episode_id = (select id from episodes where number = 1 limit 1);
 - [ ] Supabase Storage bucket is public-read but write-restricted to service role
 - [ ] At least 5 episodes pre-generated and tested before opening to public
 - [ ] One backup heroine ready (in case the first doesn't resonate)
+
+
+## Civitai / Civitai.red LoRA через Railway
+
+Можно использовать Civitai/Civitai.red download URL без коммита токена в код.
+
+Railway → Service → Variables:
+
+```env
+LORA_URL=https://civitai.red/api/download/models/YOUR_MODEL_VERSION_ID
+CIVITAI_API_TOKEN=YOUR_TOKEN_FROM_CIVITAI_ACCOUNT
+```
+
+Код автоматически добавит `?token=...` к URL перед отправкой в fal.ai. Токен не логируется и не пишется в Supabase.
+
+Важно: если fal.ai не сможет скачать файл с Civitai/Civitai.red даже с токеном, переключи только переменную `LORA_URL` на Hugging Face или Supabase Storage URL. Код менять не нужно.

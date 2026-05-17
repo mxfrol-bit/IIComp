@@ -6,6 +6,7 @@ this file only. Public API is `generate_image(prompt, seed, ...)`.
 import logging
 import os
 from typing import Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import fal_client
 
@@ -17,11 +18,36 @@ log = logging.getLogger(__name__)
 os.environ["FAL_KEY"] = settings.fal_key
 
 
+def _append_civitai_token(url: str) -> str:
+    """Append CIVITAI_API_TOKEN to Civitai/Civitai.red download URLs.
+
+    The token is kept in Railway env only. We do not log it and do not store it
+    in DB. If fal.ai still cannot fetch the file from Civitai, switch LORA_URL
+    back to a Hugging Face/Supabase public URL.
+    """
+    token = settings.civitai_api_token
+    if not token:
+        return url
+
+    parsed = urlparse(url)
+    host = (parsed.netloc or "").lower()
+    if "civitai." not in host:
+        return url
+
+    query = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != "token"]
+    query.append(("token", token))
+    return urlunparse(parsed._replace(query=urlencode(query)))
+
+
 def _lora_url() -> str:
-    """Returns the LoRA URL from settings. URL must be a publicly accessible
-    .safetensors file (Hugging Face works; raw Civitai download links don't —
-    fal's servers can't fetch them)."""
-    return settings.lora_url
+    """Returns the LoRA URL for fal.ai.
+
+    Supported production options:
+    - Hugging Face direct .safetensors URL
+    - Supabase Storage public .safetensors URL
+    - Civitai/Civitai.red download URL + CIVITAI_API_TOKEN
+    """
+    return _append_civitai_token(settings.lora_url)
 
 
 # Map our aspect ratios to fal.ai image_size enum

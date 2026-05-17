@@ -7,7 +7,7 @@ from aiogram.types import (
 )
 
 from app import db
-from app.keyboards import age_gate_kb, back_to_menu_kb, main_menu_kb
+from app.keyboards import age_gate_kb, back_to_menu_kb, content_home_kb, main_menu_kb
 
 router = Router()
 log = logging.getLogger(__name__)
@@ -25,6 +25,8 @@ MENU_TEXT = (
     "📺 Сериал — интерактивная история с героиней\n"
     "✨ Создать — сделай свою героиню\n"
     "📸 Мои персонажи — генерация фото в разных сценах\n"
+    "❤️ Романтика — свидания, поцелуи, тёплые сцены\n"
+    "🔞 Soft 18+ — купальники, бельё, халат, без explicit\n"
     "🎁 Что нового — последние твои фото\n"
     "🤝 Друзья — позови друзей и получи бонусные фото\n"
     "💎 Подписка — Pro / Premium тарифы\n"
@@ -42,8 +44,9 @@ HELP_TEXT = (
     "1️⃣ Создай персонажа в меню «✨ Создать»\n"
     "2️⃣ Открой её в «📸 Мои персонажи»\n"
     "3️⃣ Жми «📸 Сгенерировать фото» → выбери сцену\n"
-    "4️⃣ Жди ~15 секунд — фото придёт в чат\n"
-    "5️⃣ Можешь нажать «🔄 Ещё фото в этой сцене» — другой ракурс\n\n"
+    "4️⃣ Выбирай раздел: обычные сцены, романтика или soft 18+\n"
+    "5️⃣ Жди ~15 секунд — фото придёт в чат\n"
+    "6️⃣ Можешь нажать «🔄 Ещё фото в этой сцене» — другой ракурс\n\n"
     "*Сериал:* открой «📺 Сериал» в меню — там история с готовой героиней Анной, "
     "проходишь биты, делаешь выборы, открываешь следующие эпизоды.\n\n"
     "*Бонусы:* пригласи друга через «🤝 Друзья» — получите по 5 фото.\n\n"
@@ -162,6 +165,37 @@ async def on_help(cb: CallbackQuery):
         await cb.message.edit_text(HELP_TEXT, reply_markup=back_to_menu_kb(), parse_mode="Markdown")
     except Exception:
         await cb.message.answer(HELP_TEXT, reply_markup=back_to_menu_kb(), parse_mode="Markdown")
+    await cb.answer()
+
+
+
+
+@router.callback_query(F.data == "romance:home")
+async def on_romance_home(cb: CallbackQuery):
+    text = (
+        "❤️ *Романтика*\n\n"
+        "Свидания, поцелуи, объятия, утренние сообщения, вечерние сцены.\n\n"
+        "Открой персонажа и выбери раздел «❤️ Романтика»."
+    )
+    try:
+        await cb.message.edit_text(text, reply_markup=content_home_kb(), parse_mode="Markdown")
+    except Exception:
+        await cb.message.answer(text, reply_markup=content_home_kb(), parse_mode="Markdown")
+    await cb.answer()
+
+
+@router.callback_query(F.data == "soft18:home")
+async def on_soft18_home(cb: CallbackQuery):
+    text = (
+        "🔞 *Soft 18+*\n\n"
+        "Купальники, бельё, халат, утро под пледом, романтические сцены — "
+        "без explicit-контента.\n\n"
+        "Раздел доступен для 18+ пользователей на Pro/Premium."
+    )
+    try:
+        await cb.message.edit_text(text, reply_markup=content_home_kb(), parse_mode="Markdown")
+    except Exception:
+        await cb.message.answer(text, reply_markup=content_home_kb(), parse_mode="Markdown")
     await cb.answer()
 
 

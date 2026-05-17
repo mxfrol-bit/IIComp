@@ -26,7 +26,16 @@ def get_or_create_user(tg_id: int, tg_username: Optional[str] = None) -> dict:
 
 
 def confirm_age(user_id: int) -> None:
-    supabase.table("users").update({"age_confirmed": True}).eq("id", user_id).execute()
+    supabase.table("users").update({
+        "age_confirmed": True,
+        "age_confirmed_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", user_id).execute()
+
+
+def set_content_mode(user_id: int, mode: str) -> None:
+    if mode not in ("safe", "romantic", "soft18"):
+        mode = "safe"
+    supabase.table("users").update({"content_mode": mode}).eq("id", user_id).execute()
 
 
 def refresh_daily_credits(user: dict) -> dict:

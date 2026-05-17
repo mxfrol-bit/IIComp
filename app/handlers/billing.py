@@ -13,9 +13,10 @@ router = Router()
 
 BILLING_TEXT = (
     "💎 **Подписки**\n\n"
-    "**Free** — 3 фото в день, базовые сцены\n"
-    f"**Pro** ({settings.pro_price_stars} ⭐) — 100 фото в день, все сцены\n"
-    f"**Premium** ({settings.premium_price_stars} ⭐) — без лимита\n\n"
+    "**Free** — 3 фото в день, обычные сцены и романтика\n"
+    f"**Pro** ({settings.pro_price_stars} ⭐) — 100 фото в день + Soft 18+\n"
+    f"**Premium** ({settings.premium_price_stars} ⭐) — без лимита + все разделы\n\n"
+    "Soft 18+ = купальники, бельё, халат, поцелуи и романтика без explicit-контента.\n"
     "Подписка на 30 дней. Оплата через Telegram Stars."
 )
 

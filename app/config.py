@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     fal_model: str = "fal-ai/flux-lora"
     lora_url: str = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
     lora_scale: float = 0.9
+
+    # Optional Civitai/Civitai.red API token.
+    # Keep it ONLY in Railway/Shell env; never commit it to GitHub.
+    # If LORA_URL points to civitai.com or civitai.red, image_client.py appends ?token=... automatically.
+    civitai_api_token: str | None = None
     inference_steps: int = 40
     guidance_scale: float = 2.5
 

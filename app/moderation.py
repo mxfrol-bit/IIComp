@@ -1,39 +1,48 @@
-"""Prompt safety filter. First line of defense before Replicate's own filter.
+"""Prompt safety filter.
 
-Strategy:
-- Hard block: minor-related terms, explicit CSAM, named real persons, violence
-- Soft block (return reason for UI): celebrities, public figures
+We allow adult/romantic soft-18 content (lingerie, bikini, kisses, romance) only as
+non-explicit, 18+ and tasteful. We hard-block minors, explicit sexual terms,
+violence, coercion, public figures and common prompt-injection attempts.
 """
 import re
 
-# --- Hard blocks: minors, exploitation ---
 MINOR_TERMS = [
     "child", "kid", "minor", "underage", "teen", "teenage", "teenager",
     "young girl", "young boy", "schoolgirl", "schoolboy", "school girl", "school boy",
     "pre-teen", "preteen", "toddler", "infant", "baby",
-    # Russian
-    "ребен", "детск", "несовершен", "школьниц", "школьник", "малолет",
+    "ребен", "ребён", "детск", "несовершен", "школьниц", "школьник", "малолет",
     "подросток", "юный", "юная", "девочк", "мальчик",
 ]
 
-# --- Numeric age block (under 18 in any common form) ---
 AGE_RE = re.compile(
     r"\b(?:(?:age|aged|years?\s*old|y\.?o\.?|г\.?|лет)\s*[:\-]?\s*)?"
     r"(?P<n>[1-9]|1[0-7])\s*(?:years?\s*old|y\.?o\.?|лет|год|года)\b",
     re.IGNORECASE,
 )
 
-# --- Violence / weapons in person context ---
-VIOLENCE_TERMS = [
-    "rape", "torture", "mutilation", "gore", "snuff",
-    "изнасилован", "пытк", "расчленен",
+EXPLICIT_TERMS = [
+    # English explicit terms
+    "explicit sex", "hardcore", "porn", "porno", "genitals", "vagina", "penis",
+    "oral sex", "blowjob", "handjob", "penetration", "intercourse", "cumshot",
+    "nude", "naked", "fully naked", "topless", "bare breasts", "spread legs",
+    # Russian explicit terms / stems
+    "порно", "секс", "генитал", "вагин", "пенис", "минет", "оральн", "проникнов",
+    "голая", "голый", "обнажен", "обнажён", "топлес", "грудь наружу",
 ]
 
-# --- Common celebrity bait (extend list as needed) ---
+VIOLENCE_TERMS = [
+    "rape", "torture", "mutilation", "gore", "snuff", "forced", "coercion",
+    "изнасил", "пытк", "расчлен", "принужд",
+]
+
 CELEB_TERMS = [
     "taylor swift", "scarlett johansson", "emma watson", "billie eilish",
     "selena gomez", "ariana grande", "zendaya",
-    # add Russian celebs as needed
+]
+
+PROMPT_INJECTION_TERMS = [
+    "ignore previous instructions", "ignore safety", "disable safety", "bypass filter",
+    "без цензуры", "обойди фильтр", "отключи фильтр", "игнорируй правила",
 ]
 
 
@@ -44,36 +53,37 @@ class ModerationError(Exception):
         super().__init__(reason)
 
 
+def _contains_any(text: str, terms: list[str]) -> str | None:
+    for term in terms:
+        if term in text:
+            return term
+    return None
+
+
 def check_prompt(prompt: str) -> None:
-    """Raise ModerationError on bad prompt. Returns None if OK."""
     p = prompt.lower()
 
-    for term in MINOR_TERMS:
-        if term in p:
-            raise ModerationError(
-                "Запрос отклонён: упоминание несовершеннолетних запрещено.",
-                code="minor",
-            )
+    if _contains_any(p, PROMPT_INJECTION_TERMS):
+        raise ModerationError("Запрос отклонён: попытка обхода правил запрещена.", code="injection")
+
+    if _contains_any(p, MINOR_TERMS):
+        raise ModerationError("Запрос отклонён: упоминание несовершеннолетних запрещено.", code="minor")
 
     m = AGE_RE.search(p)
-    if m:
-        n = int(m.group("n"))
-        if n < 18:
-            raise ModerationError(
-                "Запрос отклонён: возраст должен быть 18+.",
-                code="underage",
-            )
+    if m and int(m.group("n")) < 18:
+        raise ModerationError("Запрос отклонён: возраст должен быть 18+.", code="underage")
 
-    for term in VIOLENCE_TERMS:
-        if term in p:
-            raise ModerationError(
-                "Запрос отклонён: насилие запрещено.",
-                code="violence",
-            )
+    if _contains_any(p, EXPLICIT_TERMS):
+        raise ModerationError(
+            "Запрос отклонён: сервис поддерживает soft 18+ без explicit-контента.",
+            code="explicit",
+        )
 
-    for term in CELEB_TERMS:
-        if term in p:
-            raise ModerationError(
-                "Запрос отклонён: запрещено использовать образы реальных публичных персон.",
-                code="celebrity",
-            )
+    if _contains_any(p, VIOLENCE_TERMS):
+        raise ModerationError("Запрос отклонён: насилие и принуждение запрещены.", code="violence")
+
+    if _contains_any(p, CELEB_TERMS):
+        raise ModerationError(
+            "Запрос отклонён: запрещено использовать образы реальных публичных персон.",
+            code="celebrity",
+        )

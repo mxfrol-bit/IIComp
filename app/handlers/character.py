@@ -7,9 +7,10 @@ from aiogram.types import CallbackQuery, Message, URLInputFile
 from app import db
 from app.keyboards import (
     age_kb, body_kb, character_detail_kb, characters_kb, delete_confirm_kb,
-    hair_kb, presets_kb, style_kb,
+    hair_kb, locked_soft18_kb, presets_kb, style_kb,
 )
 from app.persona import AGE_RANGES, BODY, HAIR, STYLE
+from app.presets import MODE_TITLES
 from app.states import CharacterCreation
 
 router = Router()
@@ -166,16 +167,41 @@ async def on_open(cb: CallbackQuery):
 
 @router.callback_query(F.data.startswith("char:scenes:"))
 async def on_scenes(cb: CallbackQuery):
-    char_id = int(cb.data.split(":")[2])
+    parts = cb.data.split(":")
+    char_id = int(parts[2])
+    mode = parts[3] if len(parts) > 3 else "safe"
+
     char = db.get_character(char_id)
     if not char:
         await cb.answer("Персонаж не найден", show_alert=True)
         return
-    text = f"🎬 *{char['name']}* — выбери сцену:"
+
+    user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
+    if char["user_id"] != user["id"]:
+        await cb.answer("Это не твой персонаж", show_alert=True)
+        return
+
+    if mode == "soft18" and user.get("tier") not in ("pro", "premium") and not user.get("is_admin"):
+        text = (
+            "🔞 *Soft 18+*\n\n"
+            "Этот раздел: романтика, купальники, бельё, халат, поцелуи — "
+            "без explicit-контента.\n\n"
+            "Доступ открыт на тарифах *Pro* и *Premium*."
+        )
+        try:
+            await cb.message.edit_text(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
+        except Exception:
+            await cb.message.answer(text, reply_markup=locked_soft18_kb(), parse_mode="Markdown")
+        await cb.answer("Раздел доступен на Pro / Premium", show_alert=True)
+        return
+
+    db.set_content_mode(user["id"], mode if mode in ("safe", "romantic", "soft18") else "safe")
+    title = MODE_TITLES.get(mode, "🎬 Сцены")
+    text = f"{title}\n\n*{char['name']}* — выбери сцену:"
     try:
-        await cb.message.edit_text(text, reply_markup=presets_kb(char_id), parse_mode="Markdown")
+        await cb.message.edit_text(text, reply_markup=presets_kb(char_id, mode), parse_mode="Markdown")
     except Exception:
-        await cb.message.answer(text, reply_markup=presets_kb(char_id), parse_mode="Markdown")
+        await cb.message.answer(text, reply_markup=presets_kb(char_id, mode), parse_mode="Markdown")
     await cb.answer()
 
 
