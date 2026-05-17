@@ -18,84 +18,103 @@ SOFT18_TAIL = (
     "realistic skin texture, cinematic soft lighting"
 )
 
+SEX_TAIL = (
+    "explicit sex scene, raw and vulgar, heavy moaning expression, ahegao elements, "
+    "sweaty skin, messy hair, hard fucking, detailed penetration, wet pussy, "
+    "creampie, cum on body, rough sex, dominant pose, realistic anatomy, "
+    "cinematic erotic lighting, very explicit and dirty"
+)
+
 PRESETS: dict[str, dict] = {
     # ==================== ROMANTIC ====================
     "date_close_table": {
         "label": "🔥 Близко за столиком",
         "rating": "romantic",
-        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward showing deep cleavage, hand on thigh, aroused expression, warm candle light"
+        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward showing deep cleavage, hand on thigh, aroused expression"
     },
     "taxi_after_date": {
         "label": "🔥 Такси после свидания",
         "rating": "romantic",
-        "scene": "back seat of taxi at night, city lights, sitting very close or on lap, skirt pulled up, hand between her legs, aroused teasing face, messy hair"
+        "scene": "back seat of taxi, skirt pulled up, sitting on his lap, hand between legs, aroused teasing face"
     },
     "doorway_goodnight": {
         "label": "🔥 У двери",
         "rating": "romantic",
-        "scene": "standing in doorway after date, one leg slightly lifted, skirt hiked up, looking back with horny expression, hand sliding down body"
-    },
-    "slow_dance_home": {
-        "label": "🔥 Медленный танец дома",
-        "rating": "romantic",
-        "scene": "slow dancing in dim light, pressed tightly against each other, ass grinding, hand on crotch, aroused expression, heavy breathing"
+        "scene": "in doorway, skirt hiked up, looking back horny, hand sliding down body"
     },
 
-    # ==================== SOFT 18+ (максимально пошлые) ====================
+    # ==================== SOFT 18+ ====================
     "soft_pajama": {
         "label": "🔞 Пижама",
         "rating": "soft18",
-        "scene": "lying on bed in thin silk pajamas, top unbuttoned, hard nipples visible, hand inside panties, legs spread, aroused moaning face, messy hair"
+        "scene": "lying on bed in thin pajamas, top unbuttoned, hard nipples, hand inside panties, legs spread, aroused moaning face"
     },
     "soft_lingerie_shirt": {
         "label": "🔞 Только его рубашка",
         "rating": "soft18",
-        "scene": "wearing only oversized open white shirt, no panties, sitting on bed with legs spread, fingers touching pussy, dirty seductive look"
+        "scene": "wearing only open white shirt, no panties, legs spread, fingers touching pussy, dirty seductive look"
     },
     "soft_beach_bikini": {
         "label": "🔞 Мокрый купальник",
         "rating": "soft18",
-        "scene": "on beach in tiny wet bikini, fabric stuck to pussy and nipples, hard nipples and camel toe visible, aroused expression, water on body"
-    },
-    "soft_bathrobe": {
-        "label": "🔞 После душа",
-        "rating": "soft18",
-        "scene": "standing in front of mirror with open bathrobe, completely naked, wet skin, hard nipples, hand between legs, aroused face, steam"
-    },
-    "soft_bed_blanket": {
-        "label": "🔞 Утро под одеялом",
-        "rating": "soft18",
-        "scene": "lying in bed, thin blanket slipping off, completely naked, legs spread, touching herself, sleepy horny expression"
+        "scene": "tiny wet bikini, fabric stuck to pussy, hard nipples, camel toe, aroused expression"
     },
     "soft_late_text": {
         "label": "🔥 Позднее сообщение",
         "rating": "soft18",
-        "scene": "late night photo, lying on stomach in tiny panties only, ass up, looking back with slutty expression, hand pulling panties aside"
+        "scene": "lying on stomach in tiny panties, ass up, looking back slutty, hand pulling panties aside"
     },
     "soft_his_hoodie": {
         "label": "🔥 В его худи",
         "rating": "soft18",
-        "scene": "wearing only oversized hoodie, nothing underneath, legs wide open, hoodie lifted, pussy visible, horny teasing expression"
-    },
-    "soft_dressing_room": {
-        "label": "🔥 Примерочная",
-        "rating": "soft18",
-        "scene": "in dressing room, mirror selfie, pulling panties aside, fingers on clit, aroused expression, biting lip"
-    },
-    "soft_after_date": {
-        "label": "🔥 После свидания",
-        "rating": "soft18",
-        "scene": "just came home after date, dress pulled down, bra off, sitting on bed touching herself, messy hair, satisfied horny face"
-    },
-    "soft_rain_shirt": {
-        "label": "🔥 Мокрая рубашка",
-        "rating": "soft18",
-        "scene": "standing in rain in wet white shirt with no bra, completely see-through, hard nipples, hand between legs, aroused face"
+        "scene": "only oversized hoodie, nothing underneath, legs wide open, pussy visible, horny expression"
     },
     "soft_mirror_selfie": {
         "label": "🔥 Зеркальное селфи",
         "rating": "soft18",
-        "scene": "mirror selfie completely naked or in tiny thong, one leg up, spreading or touching pussy from behind, dirty look"
+        "scene": "completely naked or tiny thong, leg up, spreading ass or touching pussy from behind, dirty look"
+    },
+
+    # ==================== SEX SCENES (18+) ====================
+    "sex_doggy": {
+        "label": "🔞 Сзади (doggy)",
+        "rating": "sex",
+        "scene": "doggy style sex, taken from behind, back arched, ass up, hard pounding, sweaty skin, moaning face, hair pulled, very explicit"
+    },
+    "sex_riding": {
+        "label": "🔞 Наездница (riding)",
+        "rating": "sex",
+        "scene": "cowgirl position, riding hard, bouncing breasts, hands on his chest, head thrown back in pleasure, explicit penetration"
+    },
+    "sex_missionary": {
+        "label": "🔞 Миссионер",
+        "rating": "sex",
+        "scene": "missionary sex, legs spread wide, deep penetration, intense eye contact, moaning, hands gripping sheets, sweaty bodies"
+    },
+    "sex_blowjob": {
+        "label": "🔞 Минет",
+        "rating": "sex",
+        "scene": "on knees giving blowjob, looking up with teary eyes, messy saliva, deepthroat, aroused submissive expression"
+    },
+    "sex_from_behind_standing": {
+        "label": "🔞 Стоя сзади",
+        "rating": "sex",
+        "scene": "standing doggy against wall or table, skirt lifted, hard fucking from behind, hand on throat or hair, dirty expression"
+    },
+    "sex_creampie": {
+        "label": "🔞 Кремпай",
+        "rating": "sex",
+        "scene": "after creampie, cum leaking out of pussy, legs spread, satisfied and used expression, messy and vulgar"
+    },
+    "sex_against_wall": {
+        "label": "🔞 У стены",
+        "rating": "sex",
+        "scene": "lifted against the wall, legs wrapped around, hard deep fucking, intense kissing and moaning, very explicit"
+    },
+    "sex_prone_bone": {
+        "label": "🔞 Prone bone",
+        "rating": "sex",
+        "scene": "lying flat on stomach, fucked from behind, ass squeezed, deep penetration, moaning into pillow, raw and vulgar"
     },
 }
 
@@ -103,6 +122,7 @@ MODE_TITLES = {
     "safe": "📸 Обычные сцены",
     "romantic": "❤️ Романтика",
     "soft18": "🔥 Ближе (18+)",
+    "sex": "🔞 Секс",
     "all": "🎬 Все сцены",
 }
 
@@ -115,20 +135,4 @@ def get_presets_for_mode(mode: str) -> dict[str, dict]:
     if mode == "romantic":
         return {k: v for k, v in PRESETS.items() if v.get("rating") == "romantic"}
     if mode == "soft18":
-        return {k: v for k, v in PRESETS.items() if v.get("rating") == "soft18"}
-    return {k: v for k, v in PRESETS.items() if v.get("rating") == "safe"}
-
-
-def rating_tail(rating: str) -> str:
-    if rating == "romantic":
-        return ROMANTIC_TAIL
-    if rating == "soft18":
-        return SOFT18_TAIL
-    return QUALITY_TAIL
-
-
-def build_prompt(persona_base: str, preset_key: str) -> str:
-    preset = PRESETS.get(preset_key)
-    if not preset:
-        return f"{BASE_TRIGGERS}, {persona_base}, {QUALITY_TAIL}"
-    return f"{BASE_TRIGGERS}, {persona_base}, {preset['scene']}, {rating_tail(preset.get('rating', 'safe'))}"
+        return {k: v for k, v in PRESETS.items() if v.get("rating
