@@ -27,8 +27,12 @@ from app.factory_keyboards import (
     products_kb, pick_model_for_product_kb, after_photo_kb, video_categories_kb,
     video_durations_kb, video_formats_kb, video_scenarios_kb,
 )
-from app.factory_prompts import build_hero_prompt, build_identity_pack_prompt, build_photo_prompt, build_video_prompt
+from app.factory_prompts import (
+    build_hero_prompt, build_identity_pack_prompt, build_photo_prompt, build_video_prompt,
+    build_base_scene_for_product_prompt, build_product_integration_prompt, clothing_tryon_category,
+)
 from app.image_client import generate_image
+from app.product_clients import generate_tryon, integrate_product
 from app.moderation import ModerationError, check_prompt
 from app.states import ModelCreation, ProductUpload
 from app.video_client import generate_video_from_image
@@ -572,6 +576,8 @@ async def photo_generate(cb: CallbackQuery):
         await cb.answer("Не хватает кредитов", show_alert=True)
         return
 
+    # Important: if product is uploaded, we should actually use its image.
+    # Old v3 only put product name into text prompt, so the uploaded dress/bottle never reached the model.
     prompt = build_photo_prompt(model, product, scenario)
     try:
         check_prompt(prompt)
@@ -581,10 +587,52 @@ async def photo_generate(cb: CallbackQuery):
 
     gen = db.create_content_generation(user["id"], model_id, product_id or None, "photo", scenario_key, prompt, fmt=scenario["aspect"])
     await cb.answer("Готовлю кадр…")
-    placeholder = await cb.message.answer("📸 Генерирую рекламный кадр. Обычно 10–30 секунд.")
+
+    product_mode = bool(product and settings.product_aware_mode)
+    if product and product.get("category") == "clothes":
+        wait_text = "👗 Сначала делаю базовый кадр модели, потом надеваю загруженную вещь через virtual try-on."
+    elif product_mode:
+        wait_text = "📦 Сначала делаю кадр сцены, потом встраиваю загруженный товар с сохранением формы и света."
+    else:
+        wait_text = "📸 Генерирую рекламный кадр. Обычно 10–30 секунд."
+    placeholder = await cb.message.answer(wait_text)
+
     try:
         seed = int(model.get("seed") or random.randint(1, 999999999)) + random.randint(1, 999999)
-        provider_url = await generate_image(prompt=prompt, seed=seed, aspect_ratio=scenario["aspect"])
+
+        if product_mode:
+            # Step 1: generate a clean base image with the same AI model.
+            base_prompt = build_base_scene_for_product_prompt(model, product, scenario)
+            base_url = await generate_image(prompt=base_prompt, seed=seed, aspect_ratio=scenario["aspect"])
+
+            if product.get("category") == "clothes":
+                # Step 2a: virtual try-on, so the uploaded dress/clothes are actually worn.
+                garment_url = product.get("primary_image_url")
+                try:
+                    provider_url = await generate_tryon(
+                        model_image_url=base_url,
+                        garment_image_url=garment_url,
+                        category=clothing_tryon_category(product),
+                    )
+                except Exception as e:
+                    log.warning("Try-on failed; falling back to prompt-only generation: %s", e)
+                    provider_url = await generate_image(prompt=prompt, seed=seed + 17, aspect_ratio=scenario["aspect"])
+            else:
+                # Step 2b: product integration, so bottle/chocolate/cosmetic is inserted from uploaded reference.
+                product_ref = product.get("primary_image_url")
+                integration_prompt = build_product_integration_prompt(product, scenario)
+                try:
+                    provider_url = await integrate_product(
+                        scene_image_url=base_url,
+                        product_image_url=product_ref,
+                        prompt=integration_prompt,
+                    )
+                except Exception as e:
+                    log.warning("Product integration failed; falling back to prompt-only generation: %s", e)
+                    provider_url = await generate_image(prompt=prompt, seed=seed + 17, aspect_ratio=scenario["aspect"])
+        else:
+            provider_url = await generate_image(prompt=prompt, seed=seed, aspect_ratio=scenario["aspect"])
+
         stored = await db.upload_image_from_url(provider_url, f"factory/u{user['id']}/content/g{gen['id']}_{int(time.time())}.jpg")
         db.update_content_generation(gen["id"], status="done", image_url=stored)
         try:
@@ -592,12 +640,14 @@ async def photo_generate(cb: CallbackQuery):
         except Exception:
             pass
         fresh = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
+        product_note = "товар использован по фото" if product_mode else "без товара"
         await cb.message.answer_photo(
             URLInputFile(stored),
             caption=(
                 f"📸 {scenario['label']}\n"
                 f"Модель: {model['name']}\n"
                 f"Товар: {product['title'] if product else 'без товара'}\n"
+                f"Режим: {product_note}\n"
                 f"Кредиты: {_credits_label(fresh)}"
             ),
             reply_markup=after_photo_kb(model_id, product_id, scenario_key, gen["id"]),

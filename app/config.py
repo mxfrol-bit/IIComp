@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     guidance_scale: float = 2.5
     enable_safety_checker: bool = True
 
+
+    # Product-aware generation
+    product_aware_mode: bool = True
+    tryon_model: str = "fal-ai/fashn/tryon/v1.5"
+    product_integration_model: str = "fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product"
+    product_shot_model: str = "fal-ai/bria/product-shot"
+    tryon_extra_credits: int = 2
+    product_integration_extra_credits: int = 2
+
     # Companion chat (optional). If empty, bot uses built-in fallback replies.
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-3-5-haiku-latest"
