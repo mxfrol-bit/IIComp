@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 from typing import Any
 
 import httpx
@@ -16,27 +17,34 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 PHOTO_WORDS = (
-    "фото", "селфи", "сфот", "покажи", "пришли", "скинь", "выглядишь", "что пришлешь", "что пришлёшь", "как ты сейчас", "увидеть тебя",
+    "фото", "селфи", "сфот", "покажи", "пришли", "скинь", "как ты сейчас", "увидеть тебя",
     "как ты выглядишь", "хочу тебя увидеть", "покажись", "момент", "снимок", "кадр",
     "photo", "selfie", "picture", "send pic", "show me",
 )
 VIDEO_WORDS = ("видео", "ролик", "короткое видео", "video", "clip")
 ROMANTIC_WORDS = (
     "обними", "поцел", "скуч", "люб", "роман", "хочу тебя увидеть", "тянет", "не могу оторваться", "рядом", "ближе",
-    "красивая", "милая", "нравишься", "kiss", "hug", "miss",
+    "красивая", "милая", "нравишься", "kiss", "hug", "miss", "хочу", "вечером", "встретимся",
 )
 
 SUGGESTION_TEXTS = {
-    "ask_day": "Как прошёл твой день? Мне правда интересно, что у тебя было сегодня.",
-    "meet": "Давай представим, что мы встретились сегодня вечером. Где бы ты хотела меня увидеть?",
-    "flirt": "Ты слишком мило отвечаешь. Что бы ты сделала, если бы я сейчас оказался рядом?",
-    "photo": "Мне хочется увидеть тебя сейчас. Покажешь мне один момент?",
-    "closer": "Мне нравится, как между нами становится ближе. Не останавливайся.",
-    "video": "Мне хочется увидеть этот момент чуть живее. Ты бы прислала мне короткое видео?",
+    "ask_day": "Как прошёл твой день? Я правда хочу узнать тебя ближе.",
+    "meet": "Давай увидимся сегодня. Я бы хотел провести с тобой вечер.",
+    "flirt": "Ты мне нравишься. И я не очень хочу это скрывать.",
+    "photo": "Хочу увидеть тебя сейчас. Покажешь мне один момент?",
+    "closer": "Мне нравится, как между нами становится ближе. Расскажи, о чём ты сейчас думаешь.",
+    "video": "Хочу увидеть этот момент живее. Ты бы прислала мне короткое видео?",
     "bold_home": "Я бы не стал делать вид, что мы всё ещё смотрим фильм. Я бы сел ближе к тебе.",
     "soft_tease": "Ты специально так смотришь, чтобы я не смог нормально ответить?",
     "slow": "Я бы не торопился. Просто остался бы рядом и посмотрел, что ты сделаешь первой.",
 }
+
+BAD_META_MARKERS = (
+    "sww", "sfw", "nsfw", "компаньон", "визуальная новелла", "без раздевающего",
+    "memorystorage", "parse_mode", "anthropic", "claude", "api", "fsm", "railway",
+    "supabase", "rate-limit", "ретра", "коде объективно", "патчи", "готовыми файлами",
+    "бот", "робот", "сервис", "модель", "промпт", "генерац", "механик", "кнопк",
+)
 
 
 def suggestion_to_user_text(key: str) -> str:
@@ -65,36 +73,36 @@ def relationship_delta(text: str) -> int:
 
 def _persona_summary(character: dict) -> str:
     persona = character.get("persona") or {}
-    parts = []
-    for k, v in persona.items():
-        parts.append(f"{k}: {v}")
-    return "; ".join(parts) if parts else "персонаж без подробного описания"
+    labels = []
+    for key in ("age_label", "hair_label", "body_label", "style_label"):
+        if persona.get(key):
+            labels.append(str(persona[key]))
+    descs = []
+    for key in ("age_desc", "hair_desc", "body_desc", "style_desc"):
+        if persona.get(key):
+            descs.append(str(persona[key]))
+    return "; ".join(labels + descs) if (labels or descs) else "естественная, живая, внимательная девушка"
 
 
 def _scene_context(history: list[dict[str, Any]]) -> str:
-    """Pull recent system scene notes into the model prompt.
-
-    Earlier builds stored scene starts as role='system' but then filtered them
-    out before calling Claude. This made the character forget the scene and ask
-    dumb questions like 'where are we?'.
-    """
     notes = []
-    for m in history[-8:]:
+    for m in history[-12:]:
         if m.get("role") == "system" and m.get("content"):
             notes.append(m["content"][:900])
-    return "\n".join(notes[-3:])
+    return "\n".join(notes[-4:])
 
 
 def _fallback_reply(character: dict, user_text: str, score: int, scene_context: str = "") -> str:
+    name = character.get("name") or "я"
     intent = detect_intent(user_text)
     if intent == "photo":
         return random.choice([
-            "Хорошо… я пришлю тебе один момент. Только не смотри на него слишком спокойно 😉",
-            "Сейчас. Хочу, чтобы ты увидел именно настроение, а не просто картинку.",
-            "Ладно. Но потом скажешь честно, что почувствовал, когда увидел меня.",
+            "Хорошо… я пришлю тебе один момент. Только потом скажешь честно, что почувствовал.",
+            "Сейчас. Хочу, чтобы ты увидел не просто кадр, а настроение.",
+            "Ладно. Но я буду ждать твою первую мысль после него.",
         ])
     if intent == "video":
-        return "Могу прислать короткое видео из этого момента… но выбери кадр, который тебе правда зацепил."
+        return "Могу… но только если выберешь момент, который тебе правда понравился. Мне интересно, на каком ты задержишься."
     if scene_context:
         return random.choice([
             "Она чуть улыбается и не отводит взгляд. «Вот так уже интереснее… продолжай». ",
@@ -103,15 +111,35 @@ def _fallback_reply(character: dict, user_text: str, score: int, scene_context: 
         ]).strip()
     if score > 60:
         return random.choice([
-            "Мне нравится, как ты со мной разговариваешь. Есть в этом что-то опасно привычное…",
-            "Я улыбнулась, когда прочитала это. И теперь хочу понять, что ты скажешь дальше.",
-            "С тобой становится спокойнее. Но не слишком расслабляйся — мне нравится, когда между нами есть искра.",
+            "Я улыбнулась, когда это прочитала. С тобой становится слишком легко быть откровенной…",
+            "Мне нравится, как ты со мной разговариваешь. Есть в этом что-то опасно привычное.",
+            "Я бы сейчас посмотрела на тебя и специально помолчала пару секунд. Интересно, выдержал бы?",
         ])
     return random.choice([
         "Я читаю и улыбаюсь. Расскажи подробнее — мне интересно, какой ты, когда не стараешься казаться серьёзным.",
         "Хм… звучит как начало хорошего вечера. Что бы ты сказал мне, если бы я сейчас сидела напротив?",
-        "Давай без лишних правил. Просто пиши мне как есть — мне нравится ловить твои паузы и намёки.",
+        "Мне нравится, что ты написал это просто. А теперь скажи честнее — ты часто так уходишь в работу, чтобы не думать о себе?",
     ])
+
+
+def _sanitize_reply(text: str, character: dict, user_text: str, score: int, scene_context: str) -> str:
+    text = (text or "").strip()
+    if not text:
+        return _fallback_reply(character, user_text, score, scene_context)
+
+    # Remove common role labels if model adds them.
+    name = re.escape(str(character.get("name") or ""))
+    if name:
+        text = re.sub(rf"^\s*{name}\s*[:—-]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\s*(assistant|user|персонаж|героиня)\s*[:—-]\s*", "", text, flags=re.IGNORECASE)
+
+    lowered = text.lower()
+    # If Claude returns a policy/product/engineering paragraph, discard it.
+    if any(marker in lowered for marker in BAD_META_MARKERS):
+        return _fallback_reply(character, user_text, score, scene_context)
+    if text.count("—") >= 3 or len(text) > 900:
+        return _fallback_reply(character, user_text, score, scene_context)
+    return text[:900]
 
 
 async def generate_companion_reply(
@@ -129,25 +157,27 @@ async def generate_companion_reply(
 
     name = character.get("name") or "Аня"
     system = (
-        f"Ты — AI-персонаж по имени {name} в интерактивной романтической истории 18+. "
-        "Пользователь знает, что это AI-история, но внутри чата нужно держать иммерсивный стиль личной переписки. "
-        "Не пиши как бот, сервис, помощник, игра, ведущий или сценарист. Не используй слова: генерация, модель, промпт, кнопка, сценарий, механика. "
-        "Не объясняй правила. Просто отвечай как героиня в личном чате. "
-        "Ответы должны быть короткими, живыми, с мягким флиртом, паузами, реакцией на пользователя и вопросом/крючком в конце. "
-        "Если есть текущая сцена, не спрашивай где вы находитесь — продолжай именно эту сцену. "
+        f"Ты — персонаж личной интерактивной романтической переписки по имени {name}. "
+        "Пользователь знает, что это AI-история, но в самом диалоге нужно держать стиль живой личной переписки. "
+        "Не пиши как ассистент, ведущий, сервис, игра, сценарист или разработчик. "
+        "Никогда не обсуждай правила, политику, код, API, модели, генерацию, промпты, кнопки, механику, приложение, патчи и ограничения. "
+        "Не перечисляй продуктовые треки и не давай советов разработчику. "
+        "Отвечай только от лица девушки: коротко, эмоционально, с лёгким флиртом, вниманием к словам пользователя и живым вопросом в конце. "
+        "Если пользователь пишет про работу, код или усталость — реагируй как девушка, которой он интересен: поддержи, поддень мягко, спроси о нём. "
+        "Если есть текущая сцена, не спрашивай где вы находитесь — продолжай именно её. "
         "Допустимы романтика, свидания, напряжение, поцелуи, tasteful фото/видео и soft-18+ настроение без explicit. "
         "Запрещены explicit sexual content, несовершеннолетние, насилие, принуждение, публичные персоны. "
         "Если пользователь просит увидеть тебя — естественно согласись прислать момент; система отдельно отправит фото. "
         "Если просит видео — скажи, что можешь прислать короткое видео из понравившегося момента; система отдельно отправит видео. "
         f"Описание персонажа: {_persona_summary(character)}. "
         f"Текущая близость: {relationship_score}/100. "
+        "Отвечай по-русски, 1–3 коротких сообщения в одном ответе, без markdown-таблиц и списков."
     )
     if scene_context:
-        system += f"\nТекущий контекст сцены, который надо продолжать:\n{scene_context}\n"
-    system += "Отвечай по-русски, 1–3 коротких абзаца."
+        system += f"\nТекущий скрытый контекст сцены, который надо продолжать:\n{scene_context}\n"
 
     messages: list[dict[str, str]] = []
-    for m in history[-14:]:
+    for m in history[-16:]:
         role = m.get("role")
         if role not in ("user", "assistant"):
             continue
@@ -168,8 +198,8 @@ async def generate_companion_reply(
                 },
                 json={
                     "model": settings.anthropic_model,
-                    "max_tokens": 420,
-                    "temperature": 0.9,
+                    "max_tokens": 320,
+                    "temperature": 0.92,
                     "system": system,
                     "messages": messages,
                 },
@@ -178,7 +208,7 @@ async def generate_companion_reply(
             data = resp.json()
             blocks = data.get("content") or []
             text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text").strip()
-            return text or _fallback_reply(character, user_text, relationship_score, scene_context)
+            return _sanitize_reply(text, character, user_text, relationship_score, scene_context)
     except Exception as e:
         log.warning("Anthropic chat failed, using fallback: %s", e)
         return _fallback_reply(character, user_text, relationship_score, scene_context)

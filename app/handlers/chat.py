@@ -13,7 +13,6 @@ from app.companion_client import (
     relationship_delta,
     suggestion_to_user_text,
 )
-from app.config import settings
 from app.image_client import generate_image
 from app.keyboards import after_chat_photo_kb, chat_home_kb, chat_suggestions_kb, free_chat_hint_kb, roleplay_kb
 from app.moderation import ModerationError, check_prompt
@@ -52,10 +51,10 @@ def _has_unlimited(user: dict) -> bool:
 async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "") -> None:
     if not _has_unlimited(user):
         if user.get("credits", 0) <= 0:
-            await cb_or_msg.answer("🚫 Лимит фото на сегодня исчерпан. Открой Pro/Premium в меню подписки.")
+            await cb_or_msg.answer("У тебя на сегодня закончились моменты. Можно открыть Pro/Premium в подписке.")
             return
         if not db.spend_credit(user["id"], "chat_photo"):
-            await cb_or_msg.answer("🚫 Лимит фото на сегодня исчерпан.")
+            await cb_or_msg.answer("У тебя на сегодня закончились моменты.")
             return
 
     prompt = build_chat_photo_prompt(char, user_text)
@@ -66,7 +65,7 @@ async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "
         return
 
     gen = db.create_generation(user["id"], char["id"], "chat_photo", prompt)
-    placeholder = await cb_or_msg.answer("Она набирает сообщение…\n\n«Я могу прислать тебе один момент. Только это будет между нами…»")
+    placeholder = await cb_or_msg.answer(f"{char['name']} печатает…")
 
     try:
         image_url = await generate_image(prompt=prompt, seed=random.randint(1, 2_000_000_000))
@@ -89,7 +88,7 @@ async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "
 
         await cb_or_msg.answer_photo(
             URLInputFile(stored_url),
-            caption=f"💌 {char['name']} прислала момент только для тебя",
+            caption=f"{char['name']}: «Я выбрала вот этот момент…»",
             reply_markup=after_chat_photo_kb(char["id"], gen["id"]),
         )
     except Exception as e:
@@ -97,7 +96,7 @@ async def _send_chat_photo(cb_or_msg, user: dict, char: dict, user_text: str = "
         db.update_generation(gen["id"], status="failed", error=str(e)[:500])
         if not _has_unlimited(user):
             db.grant_credits(user["id"], 1, "refund_failed_chat_photo", {"gen_id": gen["id"]})
-        await placeholder.edit_text("😞 Фото не получилось. Кредит вернул, попробуй ещё раз.")
+        await placeholder.edit_text("Не получилось отправить момент. Я вернула кредит — попробуй чуть позже.")
 
 
 @router.callback_query(F.data.startswith("chat:start:"))
@@ -110,17 +109,14 @@ async def on_chat_start(cb: CallbackQuery):
         return
 
     db.set_active_character(user["id"], char_id, enabled=True)
-    score = db.get_relationship(user["id"])
     text = (
-        f"💬 *{char['name']} онлайн*\n\n"
-        f"Близость: *{score}/100*\n\n"
-        "Она ждёт твоё сообщение. Просто напиши ей как в личном чате — коротко, честно, как хочешь.\n\n"
-        "Подсказки ниже можно не нажимать, они просто помогают начать."
+        f"{char['name']} онлайн.\n\n"
+        "Она ждёт твоё сообщение. Напиши ей как в личном чате — без команд и меню."
     )
     try:
-        await cb.message.edit_text(text, reply_markup=free_chat_hint_kb(char_id), parse_mode="Markdown")
+        await cb.message.edit_text(text, reply_markup=free_chat_hint_kb(char_id))
     except Exception:
-        await cb.message.answer(text, reply_markup=chat_home_kb(char_id), parse_mode="Markdown")
+        await cb.message.answer(text, reply_markup=free_chat_hint_kb(char_id))
     await cb.answer()
 
 
@@ -128,7 +124,7 @@ async def on_chat_start(cb: CallbackQuery):
 async def on_chat_stop(cb: CallbackQuery):
     user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
     db.set_active_character(user["id"], None, enabled=False)
-    await cb.message.answer("🚪 Диалог завершён. Когда захочешь — открой персонажа и нажми «💬 Общаться».")
+    await cb.message.answer("Диалог поставлен на паузу. Когда захочешь — открой её снова.")
     await cb.answer()
 
 
@@ -141,7 +137,7 @@ async def on_chat_photo(cb: CallbackQuery):
     if not char or char["user_id"] != user["id"]:
         await cb.answer("Персонаж не найден", show_alert=True)
         return
-    await cb.answer("Она готовит момент…")
+    await cb.answer("Она отправляет…")
     await _send_chat_photo(cb.message, user, char, "хочу увидеть тебя сейчас")
 
 
@@ -149,7 +145,7 @@ async def on_chat_photo(cb: CallbackQuery):
 async def on_roleplay_home(cb: CallbackQuery):
     char_id = int(cb.data.split(":")[-1])
     await cb.message.answer(
-        "🎭 Выбери настроение сцены. Дальше просто отвечай ей как в настоящем диалоге — без меню и команд.",
+        "Выбери настроение. Дальше просто отвечай ей своими словами.",
         reply_markup=roleplay_kb(char_id),
     )
     await cb.answer()
@@ -166,20 +162,19 @@ async def on_roleplay_start(cb: CallbackQuery):
         return
     db.set_active_character(user["id"], char_id, enabled=True)
     scene = ROLEPLAY_SCENES.get(key, ROLEPLAY_SCENES["date"])
-    context = scene["context"]
-    line = scene["line"]
-    db.add_chat_message(user["id"], char_id, "system", f"Текущая сцена: {context}", event_type="roleplay_start")
-    db.add_chat_message(user["id"], char_id, "assistant", line, event_type="roleplay_start")
+    db.add_chat_message(user["id"], char_id, "system", f"Скрытый контекст: {scene['context']}", event_type="roleplay_start")
+    db.add_chat_message(user["id"], char_id, "assistant", scene["line"], event_type="roleplay_start")
     await cb.message.answer(
-        f"*{char['name']}:* {line}",
+        f"{char['name']}: {scene['line']}",
         reply_markup=chat_suggestions_kb(char_id, db.get_relationship(user["id"])),
-        parse_mode="Markdown",
     )
     await cb.answer()
 
 
-
 async def _process_free_chat(message: Message, user: dict, char: dict, text: str, *, from_suggestion: bool = False) -> None:
+    text = (text or "").strip()
+    if not text:
+        return
     try:
         check_prompt(text)
     except ModerationError as e:
@@ -187,15 +182,17 @@ async def _process_free_chat(message: Message, user: dict, char: dict, text: str
         return
 
     db.set_active_character(user["id"], char["id"], enabled=True)
+
+    # Important: fetch history before adding the current user text, otherwise
+    # Claude receives the same message twice and can drift into strange meta replies.
+    history = db.get_chat_history(user["id"], char["id"], limit=18)
     db.add_chat_message(user["id"], char["id"], "user", text, event_type="suggestion" if from_suggestion else "chat")
 
     delta = relationship_delta(text)
-    # Any meaningful free-text interaction should slowly warm the relationship.
-    if delta == 0 and len(text) >= 12:
+    if delta == 0 and len(text) >= 10:
         delta = 1
     score = db.update_relationship(user["id"], delta) if delta else db.get_relationship(user["id"])
 
-    history = db.get_chat_history(user["id"], char["id"], limit=16)
     reply = await generate_companion_reply(
         user=user,
         character=char,
@@ -206,13 +203,12 @@ async def _process_free_chat(message: Message, user: dict, char: dict, text: str
     db.add_chat_message(user["id"], char["id"], "assistant", reply)
 
     intent = detect_intent(text)
-    suffix = f"\n\n💕 Близость: {score}/100" if delta else ""
-    await message.answer(reply + suffix, reply_markup=chat_suggestions_kb(char["id"], score))
+    await message.answer(reply, reply_markup=chat_suggestions_kb(char["id"], score))
 
     if intent == "photo":
         await _send_chat_photo(message, user, char, text)
     elif intent == "video":
-        await message.answer("Она улыбается: «Я могу отправить короткое видео из того момента, который тебе понравился. Выбери кадр ниже — и я пришлю его живым».")
+        await message.answer("Я могу прислать короткое видео из момента, который тебе понравился. Выбери его под последним фото.")
 
 
 @router.callback_query(F.data.startswith("chat:suggest:"))
@@ -226,7 +222,7 @@ async def on_chat_suggestion(cb: CallbackQuery):
         await cb.answer("Персонаж не найден", show_alert=True)
         return
     text = suggestion_to_user_text(key)
-    await cb.answer("Она читает…")
+    await cb.answer()
     await _process_free_chat(cb.message, user, char, text, from_suggestion=True)
 
 
@@ -239,8 +235,7 @@ async def on_chat_message(message: Message):
     char = db.get_character(user["active_character_id"])
     if not char or char["user_id"] != user["id"]:
         db.set_active_character(user["id"], None, enabled=False)
-        await message.answer("Диалог сбросился. Открой героиню заново — и она снова напишет тебе.")
+        await message.answer("Диалог сбросился. Открой её заново — и она снова будет онлайн.")
         return
 
-    text = message.text.strip()
-    await _process_free_chat(message, user, char, text)
+    await _process_free_chat(message, user, char, message.text)

@@ -98,7 +98,7 @@ async def on_style(cb: CallbackQuery, state: FSMContext):
 
     await cb.message.edit_text(
         f"✨ *{char['name']} создана.*\n\n"
-        "Сейчас она пришлёт первый момент — как будто вы только что познакомились…",
+        "Подожди секунду… она уже появилась в чате.",
         parse_mode="Markdown",
     )
     await cb.answer()
@@ -136,7 +136,7 @@ async def on_style(cb: CallbackQuery, state: FSMContext):
         db.update_generation(gen["id"], status="failed", error=str(e)[:500])
         await cb.message.answer(
             f"💕 *{char['name']} создана.*\n\n"
-            f"Первый момент не отправился, но она уже написала.\n\n{first_text}",
+            f"{first_text}",
             reply_markup=intro_after_avatar_kb(char["id"]),
             parse_mode="Markdown",
         )

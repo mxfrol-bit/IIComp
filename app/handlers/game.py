@@ -25,7 +25,7 @@ async def _send_first_meeting_photo(cb: CallbackQuery, user: dict, char: dict) -
         return
 
     gen = db.create_generation(user["id"], char["id"], "first_meeting", prompt)
-    placeholder = await cb.message.answer("☕ Она уже в кафе. Сейчас пришлёт момент встречи…")
+    placeholder = await cb.message.answer(f"{char['name']} печатает…")
     try:
         image_url = await generate_image(prompt=prompt, seed=random.randint(1, 2_000_000_000))
         dest_path = f"u{user['id']}/c{char['id']}/first_meeting_{int(time.time())}.jpg"
@@ -42,7 +42,7 @@ async def _send_first_meeting_photo(cb: CallbackQuery, user: dict, char: dict) -
 
         db.set_active_character(user["id"], char["id"], enabled=True)
         db.update_relationship(user["id"], 3)
-        db.add_chat_message(user["id"], char["id"], "system", "Началась первая встреча в кафе.", event_type="first_meeting")
+        db.add_chat_message(user["id"], char["id"], "system", "Скрытый контекст: первая встреча в кафе у окна, дождь за стеклом, лёгкое волнение и взаимный интерес.", event_type="first_meeting")
         db.add_chat_message(user["id"], char["id"], "assistant", first_meeting_text(char), event_type="first_meeting")
 
         try:
@@ -102,11 +102,11 @@ async def on_intro_reply(cb: CallbackQuery):
         await cb.answer("Персонаж не найден", show_alert=True)
         return
     db.set_active_character(user["id"], char_id, enabled=True)
-    msg = first_companion_message(char)
+    msg = "Я здесь. Просто напиши мне, что у тебя сейчас в голове."
+    db.add_chat_message(user["id"], char_id, "assistant", msg, event_type="intro_nudge")
     await cb.message.answer(
-        f"💬 *{char['name']} пишет первой:*\n\n{msg}\n\nОтветь ей обычным сообщением — дальше она будет вести диалог сама.",
+        f"{char['name']}: {msg}",
         reply_markup=chat_home_kb(char_id),
-        parse_mode="Markdown",
     )
     await cb.answer()
 
@@ -147,8 +147,7 @@ async def on_first_meeting_answer(cb: CallbackQuery):
     )
     db.add_chat_message(user["id"], char_id, "assistant", reply, event_type="first_meeting_reply")
     await cb.message.answer(
-        f"*{char['name']}:* {reply}\n\n💕 Близость: *{score}/100*",
+        f"{char['name']}: {reply}",
         reply_markup=chat_suggestions_kb(char_id, score),
-        parse_mode="Markdown",
     )
     await cb.answer()
