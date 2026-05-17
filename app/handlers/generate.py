@@ -71,8 +71,10 @@ async def on_generate(cb: CallbackQuery):
     prompt = build_prompt(persona_base, preset_key)
 
     try:
-        check_prompt(prompt)
-    except ModerationError as e:
+    preset = PRESETS.get(preset_key, {})
+    rating = preset.get("rating", "safe")
+    check_prompt(prompt, rating=rating)
+except ModerationError as e:
         await cb.answer(e.reason, show_alert=True)
         return
 
