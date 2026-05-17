@@ -147,7 +147,7 @@ async def on_first_meeting_answer(cb: CallbackQuery):
     )
     db.add_chat_message(user["id"], char_id, "assistant", reply, event_type="first_meeting_reply")
     await cb.message.answer(
-        f"*Ты:* {user_text}\n\n*{char['name']}:* {reply}\n\n💕 Близость: *{score}/100*",
+        f"*{char['name']}:* {reply}\n\n💕 Близость: *{score}/100*",
         reply_markup=chat_suggestions_kb(char_id, score),
         parse_mode="Markdown",
     )

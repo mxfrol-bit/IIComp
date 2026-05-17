@@ -21,12 +21,27 @@ from app.moderation import ModerationError, check_prompt
 router = Router()
 log = logging.getLogger(__name__)
 
-ROLEPLAY_STARTERS = {
-    "date": "Сцена: вы впервые встретились в маленьком кафе. Она уже ждёт у окна, улыбается и говорит: «Я думала, ты не решишься подойти». Ответь ей.",
-    "walk": "Сцена: поздняя прогулка после дождя. Она идёт рядом слишком близко, иногда задевает твою руку и делает вид, что случайно. Что ты скажешь?",
-    "home": "Сцена: вечер у неё дома. Фильм давно на паузе, свет приглушён, она смотрит прямо на тебя и спрашивает: «И что мы теперь будем делать?»",
-    "surprise": "Сцена: ты сделал ей неожиданный сюрприз. Она открывает дверь, улыбается и говорит: «Ты правда решил меня удивить?» Что ты приготовил?",
-    "tease": "Сцена: она прислала сообщение поздно вечером: «Я не могу уснуть. Развлечёшь меня?» Ответь ей так, чтобы она улыбнулась.",
+ROLEPLAY_SCENES = {
+    "date": {
+        "context": "Вы впервые встретились в маленьком кафе у окна. За стеклом дождь. Она уже ждёт, слегка волнуется, но старается держаться уверенно.",
+        "line": "Я уже думала, что ты не решишься подойти… но, кажется, мне нравится, что ты всё-таки здесь.",
+    },
+    "walk": {
+        "context": "Поздняя прогулка после дождя. Ночной город, мокрый асфальт, тёплый свет витрин. Она идёт рядом слишком близко и иногда задевает твою руку.",
+        "line": "Странно… мы вроде просто гуляем, а у меня ощущение, будто вечер уже стал слишком личным.",
+    },
+    "home": {
+        "context": "Вечер у неё дома. Фильм давно стоит на паузе, свет приглушён. Она сидит рядом на диване и смотрит прямо на тебя.",
+        "line": "Фильм уже полчаса на паузе… ты правда хочешь делать вид, что мы его смотрим?",
+    },
+    "surprise": {
+        "context": "Ты приехал к ней с маленьким сюрпризом. Она открывает дверь, улыбается и пытается скрыть, что ей приятно.",
+        "line": "Ты правда решил меня удивить? Теперь мне интересно, что ты задумал.",
+    },
+    "tease": {
+        "context": "Поздний вечер. Она пишет первой, не может уснуть и явно хочет, чтобы разговор стал ближе.",
+        "line": "Я не могу уснуть. И почему-то мне кажется, что ты можешь в этом помочь.",
+    },
 }
 
 
@@ -97,10 +112,10 @@ async def on_chat_start(cb: CallbackQuery):
     db.set_active_character(user["id"], char_id, enabled=True)
     score = db.get_relationship(user["id"])
     text = (
-        f"💬 *{char['name']} рядом*\n\n"
-        f"Отношения: *{score}/100*\n\n"
-        "Просто пиши ей как в обычном чате. Кнопки ниже — это только подсказки, их можно игнорировать.\n\n"
-        "Она будет отвечать сама, флиртовать, задавать вопросы и постепенно открывать новые моменты."
+        f"💬 *{char['name']} онлайн*\n\n"
+        f"Близость: *{score}/100*\n\n"
+        "Она ждёт твоё сообщение. Просто напиши ей как в личном чате — коротко, честно, как хочешь.\n\n"
+        "Подсказки ниже можно не нажимать, они просто помогают начать."
     )
     try:
         await cb.message.edit_text(text, reply_markup=free_chat_hint_kb(char_id), parse_mode="Markdown")
@@ -150,11 +165,14 @@ async def on_roleplay_start(cb: CallbackQuery):
         await cb.answer("Персонаж не найден", show_alert=True)
         return
     db.set_active_character(user["id"], char_id, enabled=True)
-    starter = ROLEPLAY_STARTERS.get(key, ROLEPLAY_STARTERS["date"])
-    db.add_chat_message(user["id"], char_id, "system", starter, event_type="roleplay_start")
+    scene = ROLEPLAY_SCENES.get(key, ROLEPLAY_SCENES["date"])
+    context = scene["context"]
+    line = scene["line"]
+    db.add_chat_message(user["id"], char_id, "system", f"Текущая сцена: {context}", event_type="roleplay_start")
+    db.add_chat_message(user["id"], char_id, "assistant", line, event_type="roleplay_start")
     await cb.message.answer(
-        f"🎭 *Сцена началась*\n\n{starter}\n\nПиши ей обычным сообщением — будто вы уже внутри этого момента.",
-        reply_markup=chat_home_kb(char_id),
+        f"*{char['name']}:* {line}",
+        reply_markup=chat_suggestions_kb(char_id, db.get_relationship(user["id"])),
         parse_mode="Markdown",
     )
     await cb.answer()
@@ -194,7 +212,7 @@ async def _process_free_chat(message: Message, user: dict, char: dict, text: str
     if intent == "photo":
         await _send_chat_photo(message, user, char, text)
     elif intent == "video":
-        await message.answer("Она улыбается: «Выбери момент, который тебе понравился, и я отправлю его коротким видео».")
+        await message.answer("Она улыбается: «Я могу отправить короткое видео из того момента, который тебе понравился. Выбери кадр ниже — и я пришлю его живым».")
 
 
 @router.callback_query(F.data.startswith("chat:suggest:"))
@@ -209,7 +227,6 @@ async def on_chat_suggestion(cb: CallbackQuery):
         return
     text = suggestion_to_user_text(key)
     await cb.answer("Она читает…")
-    await cb.message.answer(f"*Ты:* {text}", parse_mode="Markdown")
     await _process_free_chat(cb.message, user, char, text, from_suggestion=True)
 
 

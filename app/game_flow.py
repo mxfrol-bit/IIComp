@@ -1,7 +1,7 @@
 """Game-flow helpers for the companion bot.
 
-This module keeps the product logic readable: creation -> first portrait -> first
-message -> first meeting -> relationship growth -> romantic/soft18 unlocks.
+Main product logic: create character -> first photo -> she writes first ->
+free chat -> first meeting -> relationship growth -> romantic/soft18 unlocks.
 """
 from __future__ import annotations
 
@@ -22,13 +22,12 @@ def persona_label(character: dict) -> str:
 
 
 def build_intro_avatar_prompt(character: dict) -> str:
-    """First character card image: game-like but realistic portrait."""
+    """First character photo: natural private profile-style portrait."""
     persona_base = build_base_prompt(character["persona"])
     return (
         f"{BASE_TRIGGERS}, {persona_base}, "
-        "first private profile photo in an interactive romance story, natural phone portrait, "
-        "looking into the camera, warm curious smile, clean cozy background, "
-        "tasteful stylish outfit, non-explicit, no nudity, first message mood, "
+        "natural private profile photo, phone portrait, looking into the camera, "
+        "warm curious smile, cozy background, stylish casual outfit, tasteful, non-explicit, no nudity, "
         f"{QUALITY_TAIL}"
     )
 
@@ -38,9 +37,8 @@ def build_first_meeting_prompt(character: dict) -> str:
     persona_base = build_base_prompt(character["persona"])
     return (
         f"{BASE_TRIGGERS}, {persona_base}, "
-        "first meeting scene in a cozy cafe near the window, rain outside, warm light, "
-        "she notices the viewer and smiles like the story just began, candid cinematic photo, "
-        "tasteful romantic but non-explicit, casual outfit, "
+        "first date mood in a cozy cafe near the window, rain outside, warm light, "
+        "she notices the viewer and smiles, candid cinematic phone photo, tasteful romantic but non-explicit, casual outfit, "
         f"{ROMANTIC_TAIL}"
     )
 
@@ -48,28 +46,26 @@ def build_first_meeting_prompt(character: dict) -> str:
 def first_companion_message(character: dict) -> str:
     name = character.get("name") or "она"
     return (
-        f"Привет… я {name}. Кажется, мы только что совпали в этой истории 🙂\n\n"
-        "Не будем делать вид, что мы давно знакомы. Но мне правда интересно, какой ты: "
-        "ты видишь моё первое фото, а я хочу понять, какой ты.\n\n"
-        "С чего начнём — поговорим здесь или представим нашу первую встречу?"
+        f"Привет… я {name}.\n\n"
+        "Я посмотрела на твой профиль и почему-то задержалась. Есть в тебе что-то, из-за чего хочется не просто поставить лайк, а написать первой.\n\n"
+        "Расскажешь мне о себе чуть честнее, чем обычно?"
     )
 
 
 def first_meeting_text(character: dict) -> str:
     name = character.get("name") or "она"
     return (
-        f"☕ *Первая встреча*\n\n"
         f"{name} сидит у окна. На улице дождь, в кафе пахнет кофе и выпечкой. "
         "Она замечает тебя, чуть улыбается и первой нарушает паузу:\n\n"
-        f"— Ну привет. Я думала, ты так и будешь смотреть издалека."
+        "— Ну привет. Я думала, ты так и будешь смотреть издалека."
     )
 
 
 def answer_text(choice: str) -> str:
     options = {
-        "calm": "Я спокойно улыбаюсь и говорю: «Привет. Просто не хотел испортить момент.»",
-        "bold": "Я смотрю ей в глаза: «Если честно, ты слишком притягательная, чтобы просто пройти мимо.»",
-        "funny": "Я улыбаюсь: «Я хотел выглядеть уверенно, но ты сбила меня с роли.»",
-        "photo": "Я говорю: «Мне нравится, как ты смотришь. Покажешь мне ещё один момент?»",
+        "calm": "Привет. Я рад, что ты пришла. Просто не хотел испортить момент.",
+        "bold": "Если честно, ты слишком притягательная, чтобы просто пройти мимо.",
+        "funny": "Я хотел выглядеть уверенно, но ты сбила меня с роли.",
+        "photo": "Мне нравится, как ты смотришь. Хочу увидеть тебя чуть ближе.",
     }
     return options.get(choice, options["calm"])
