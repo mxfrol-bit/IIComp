@@ -10,6 +10,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 import fal_client
 
 from app.config import settings
+from app.quality import enhance_prompt
 
 log = logging.getLogger(__name__)
 
@@ -60,10 +61,20 @@ async def generate_image(
     lora_url = _lora_url()
     scale = lora_scale if lora_scale is not None else settings.lora_scale
 
+    quality_kind = "fashion" if "fashion" in prompt.lower() or "outfit" in prompt.lower() else "product"
+    prompt = enhance_prompt(prompt, quality_kind)
+
+    steps = settings.inference_steps
+    mode = (settings.photo_quality_mode or "pro").lower()
+    if mode == "fast":
+        steps = min(steps, 28)
+    elif mode == "max":
+        steps = max(steps, 50)
+
     arguments: dict = {
         "prompt": prompt,
         "image_size": image_size,
-        "num_inference_steps": settings.inference_steps,
+        "num_inference_steps": steps,
         "guidance_scale": settings.guidance_scale,
         "seed": seed,
         "num_images": 1,

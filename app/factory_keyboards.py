@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from app.config import settings
 from app.factory_catalog import (
     AGE_RANGES, APPEARANCE_TYPES, HAIR_COLORS, HAIR_LENGTHS, MODEL_STYLES,
     NICHES, PHOTO_SCENARIOS, PRODUCT_CATEGORIES, VIDEO_DURATIONS,
@@ -11,13 +12,16 @@ from app.factory_catalog import (
 
 
 def main_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🧬 Создать AI-модель", callback_data="fm:new")],
-        [InlineKeyboardButton(text="👤 Мои модели", callback_data="fm:list"), InlineKeyboardButton(text="📦 Мои товары", callback_data="fp:list")],
-        [InlineKeyboardButton(text="📸 Фото-контент", callback_data="fc:photo_home"), InlineKeyboardButton(text="🎥 Видео / Reels", callback_data="fc:video_home")],
+    rows = [
+        [InlineKeyboardButton(text="🚀 Быстрый старт: модель + товар", callback_data="quick:start")],
+        [InlineKeyboardButton(text="🧬 AI-модели", callback_data="fm:list"), InlineKeyboardButton(text="📦 Товары", callback_data="fp:list")],
+        [InlineKeyboardButton(text="📢 Реклама с товаром", callback_data="fc:photo_home"), InlineKeyboardButton(text="🎥 Reels / видео", callback_data="fc:video_home")],
         [InlineKeyboardButton(text="🧾 Контент-план", callback_data="fc:plan_home"), InlineKeyboardButton(text="💎 Тарифы", callback_data="billing:menu")],
-        [InlineKeyboardButton(text="🔒 Private", callback_data="private:home"), InlineKeyboardButton(text="❓ Помощь", callback_data="help")],
-    ])
+    ]
+    if settings.web_public_url:
+        rows.append([InlineKeyboardButton(text="📲 Mini App", web_app=WebAppInfo(url=settings.web_public_url.rstrip('/') + "/mini"))])
+    rows.append([InlineKeyboardButton(text="🔒 Private", callback_data="private:home"), InlineKeyboardButton(text="❓ Помощь", callback_data="help")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def back_menu_kb() -> InlineKeyboardMarkup:
@@ -76,14 +80,13 @@ def models_kb(models: list[dict]) -> InlineKeyboardMarkup:
 
 def model_card_kb(model_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📸 Instagram-съёмка", callback_data=f"fc:photo:{model_id}:0")],
-        [InlineKeyboardButton(text="📢 Реклама с товаром", callback_data=f"fc:ad_products:{model_id}")],
-        [InlineKeyboardButton(text="🎥 Видео / Reels", callback_data=f"fc:video_model:{model_id}")],
-        [InlineKeyboardButton(text="🧬 Закрепить лицо", callback_data=f"fm:identity:{model_id}")],
+        [InlineKeyboardButton(text="📢 Сделать рекламу с товаром", callback_data=f"fc:ad_products:{model_id}")],
+        [InlineKeyboardButton(text="📸 Instagram / lifestyle съёмка", callback_data=f"fc:photo:{model_id}:0")],
+        [InlineKeyboardButton(text="🎥 Reels из готового кадра", callback_data=f"fc:video_model:{model_id}")],
+        [InlineKeyboardButton(text="🧬 Улучшить постоянство лица", callback_data=f"fm:identity:{model_id}")],
         [InlineKeyboardButton(text="🧾 Контент-план", callback_data=f"fc:plan_model:{model_id}:0")],
         [InlineKeyboardButton(text="📦 Добавить товар", callback_data="fp:new")],
-        [InlineKeyboardButton(text="🗑 Удалить модель", callback_data=f"fm:delq:{model_id}")],
-        [InlineKeyboardButton(text="◀ Мои модели", callback_data="fm:list")],
+        [InlineKeyboardButton(text="🗑 Удалить модель", callback_data=f"fm:delq:{model_id}"), InlineKeyboardButton(text="◀ Мои модели", callback_data="fm:list")],
     ])
 
 

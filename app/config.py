@@ -39,8 +39,13 @@ class Settings(BaseSettings):
     # Product-aware generation
     product_aware_mode: bool = True
     tryon_model: str = "fal-ai/fashn/tryon/v1.5"
+    # Product composition. For non-clothes we default to strict BRIA placement,
+    # because Qwen-style fusion can redraw/reinvent packaging.
     product_integration_model: str = "fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product"
     product_shot_model: str = "fal-ai/bria/product-shot"
+    product_embed_model: str = "bria/embed-product"
+    product_holding_model: str = "fal-ai/image-apps-v2/product-holding"
+    product_composition_mode: str = "strict"  # strict | fusion
     tryon_extra_credits: int = 2
     product_integration_extra_credits: int = 2
 
@@ -57,6 +62,20 @@ class Settings(BaseSettings):
     # Test/promo referral link. Example: https://t.me/BOT?start=beta2000
     promo_ref_code: str = "beta2000"
     promo_ref_bonus_credits: int = 2000
+
+    # Web admin / Telegram Mini App
+    web_enabled: bool = True
+    web_public_url: str | None = None  # e.g. https://your-app.up.railway.app
+    admin_web_token: str | None = None  # set in Railway, never commit
+
+    # Pro quality controls
+    photo_quality_mode: str = "pro"  # fast | pro | max
+    prompt_quality_tail: str = (
+        "ultra realistic premium commercial campaign, high-end editorial lighting, "
+        "natural skin texture, accurate hands, clean composition, realistic product scale, "
+        "ready for Instagram ads, 4k detail, no artifacts"
+    )
+    hero_identity_refs: int = 4
 
 
 settings = Settings()

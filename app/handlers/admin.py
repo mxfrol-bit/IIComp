@@ -13,6 +13,7 @@ from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
 from app import db
+from app.config import settings
 from app.db import supabase
 
 router = Router()
@@ -25,6 +26,7 @@ HELP = (
     "`/admin tier <username> <free|pro|premium>` — сменить тариф на 30 дней\n"
     "`/admin stats` — общая статистика\n"
     "`/admin makeadmin <username>` — назначить админа\n"
+    "`/admin web` — ссылка на web admin панель\n"
 )
 
 
@@ -44,6 +46,18 @@ async def cmd_admin(message: Message, command: CommandObject):
 
     if sub == "stats":
         await _stats(message)
+        return
+
+    if sub == "web":
+        if not settings.web_public_url:
+            await message.answer("WEB_PUBLIC_URL не задан в Railway. Добавь публичный URL Railway сервиса.")
+            return
+        if not settings.admin_web_token:
+            await message.answer("ADMIN_WEB_TOKEN не задан в Railway. Добавь секретный токен для админки.")
+            return
+        url = settings.web_public_url.rstrip("/") + "/admin?token=" + settings.admin_web_token
+        mini = settings.web_public_url.rstrip("/") + "/mini"
+        await message.answer(f"🛠 Web admin:\n{url}\n\n📲 Mini App:\n{mini}")
         return
 
     if sub == "grant" and len(args) == 3:

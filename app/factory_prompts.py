@@ -6,9 +6,9 @@ from typing import Optional
 from app.factory_catalog import PRODUCT_CATEGORIES
 
 BASE_PHOTO_STYLE = (
-    "professional commercial photography, realistic high-quality image, premium Instagram content, "
-    "authentic influencer style, clean composition, natural skin texture, realistic hands, detailed product photography, "
-    "no text artifacts, no watermark, no distorted label, tasteful, brand-safe"
+    "premium commercial photography for Instagram ads, realistic high-end influencer content, "
+    "editorial lighting, natural skin texture, accurate hands, believable fabric and product materials, "
+    "clean composition, native advertising aesthetic, expensive but authentic, brand-safe, no text artifacts, no watermark"
 )
 
 NEGATIVE_STYLE = (
@@ -40,7 +40,7 @@ def product_text(product: Optional[dict]) -> str:
     return (
         f"Product to advertise: {title}. Product category: {category}. "
         f"Product description and visual details: {description}. "
-        "Show the product naturally and clearly, keep the packaging shape believable, make it look like native advertising."
+        "Show the product naturally and clearly, keep the packaging shape, fabric, color and label details believable, make it look like native advertising."
     )
 
 
@@ -69,7 +69,7 @@ def build_photo_prompt(model: dict, product: Optional[dict], scenario: dict) -> 
     return (
         f"{BASE_PHOTO_STYLE}. Virtual AI model: {model.get('name')}. {persona_text(model)}. "
         f"Scene: {scenario['prompt']}. {product_part} {product_focus} "
-        "The result must look like a ready-to-post Instagram or advertising asset. "
+        "The result must look like a ready-to-post premium Instagram or advertising asset, not a raw AI render. "
         f"{NEGATIVE_STYLE}."
     )
 
@@ -114,7 +114,7 @@ def build_product_integration_prompt(product: dict, scenario: dict) -> str:
         f"Blend the uploaded product into the scene as realistic native advertising. Product: {title}. "
         f"Category: {category}. Details: {desc}. Scene target: {scenario['prompt']}. "
         "Keep the product shape, color, packaging and visual identity from the reference image. "
-        "Correct perspective, scale, lighting and shadows. Make it look natural, premium and ready for Instagram ads. "
+        "Correct perspective, scale, lighting and shadows. Preserve the real product silhouette and key visual details. Make it look natural, premium and ready for Instagram ads. "
         "Do not invent unreadable text, do not distort the product, do not remove the person from the scene."
     )
 

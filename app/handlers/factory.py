@@ -32,7 +32,7 @@ from app.factory_prompts import (
     build_base_scene_for_product_prompt, build_product_integration_prompt, clothing_tryon_category,
 )
 from app.image_client import generate_image
-from app.product_clients import generate_tryon, integrate_product
+from app.product_clients import generate_tryon, integrate_product, product_holding, embed_product_strict, product_lifestyle_shot
 from app.moderation import ModerationError, check_prompt
 from app.states import ModelCreation, ProductUpload
 from app.video_client import generate_video_from_image
@@ -618,18 +618,49 @@ async def photo_generate(cb: CallbackQuery):
                     log.warning("Try-on failed; falling back to prompt-only generation: %s", e)
                     provider_url = await generate_image(prompt=prompt, seed=seed + 17, aspect_ratio=scenario["aspect"])
             else:
-                # Step 2b: product integration, so bottle/chocolate/cosmetic is inserted from uploaded reference.
+                # Step 2b: non-clothing product. Use strict product-preserving tools first.
+                # Qwen/fusion can look pretty, but often redraws the product (wrong logo/label).
+                # For real ad content the uploaded product must stay the same.
                 product_ref = product.get("primary_image_url")
-                integration_prompt = build_product_integration_prompt(product, scenario)
+                holding_scenarios = {
+                    "pr_hand", "pr_reveal", "pr_use", "pr_story",
+                    "fo_sip", "fo_choco", "be_skin", "be_perfume", "v_pr_hand"
+                }
                 try:
-                    provider_url = await integrate_product(
-                        scene_image_url=base_url,
-                        product_image_url=product_ref,
-                        prompt=integration_prompt,
-                    )
+                    if scenario_key in holding_scenarios:
+                        provider_url = await product_holding(
+                            person_image_url=base_url,
+                            product_image_url=product_ref,
+                        )
+                    elif settings.product_composition_mode.lower() == "fusion":
+                        integration_prompt = build_product_integration_prompt(product, scenario)
+                        provider_url = await integrate_product(
+                            scene_image_url=base_url,
+                            product_image_url=product_ref,
+                            prompt=integration_prompt,
+                        )
+                    else:
+                        provider_url = await embed_product_strict(
+                            scene_image_url=base_url,
+                            product_image_url=product_ref,
+                            aspect_ratio=scenario["aspect"],
+                            scenario_key=scenario_key,
+                            seed=seed,
+                        )
                 except Exception as e:
-                    log.warning("Product integration failed; falling back to prompt-only generation: %s", e)
-                    provider_url = await generate_image(prompt=prompt, seed=seed + 17, aspect_ratio=scenario["aspect"])
+                    log.warning("Strict product placement failed; trying product-only shot: %s", e)
+                    try:
+                        provider_url = await product_lifestyle_shot(
+                            product_image_url=product_ref,
+                            scene_description=(
+                                f"premium Instagram advertising scene inspired by: {scenario['prompt']}; "
+                                "clean commercial lighting, realistic shadows, high-end product photography"
+                            ),
+                            placement="bottom_center",
+                        )
+                    except Exception as e2:
+                        log.warning("Product shot fallback failed; falling back to prompt-only generation: %s", e2)
+                        provider_url = await generate_image(prompt=prompt, seed=seed + 17, aspect_ratio=scenario["aspect"])
         else:
             provider_url = await generate_image(prompt=prompt, seed=seed, aspect_ratio=scenario["aspect"])
 
@@ -772,5 +803,38 @@ async def private_home(cb: CallbackQuery):
             "🔒 Private-раздел зарезервирован как отдельный модуль.\n"
             "Сейчас он отключён от основной логики, чтобы не мешать профессиональному продукту.",
             reply_markup=main_menu_kb(),
+        )
+    await cb.answer()
+
+@router.callback_query(F.data == "quick:start")
+async def quick_start(cb: CallbackQuery):
+    user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
+    models = db.get_user_ai_models(user["id"])
+    products = db.get_user_products(user["id"])
+    if not models:
+        await cb.message.answer(
+            "🚀 Быстрый старт\n\nШаг 1/3 — сначала создай AI-модель. После этого загрузишь товар и сразу соберём рекламный кадр.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🧬 Создать AI-модель", callback_data="fm:new")],
+                [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
+            ]),
+        )
+    elif not products:
+        await cb.message.answer(
+            "🚀 Быстрый старт\n\nШаг 2/3 — модель уже есть. Теперь загрузи товар: платье, бутылку, шоколадку, косметику или аксессуар.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📦 Загрузить товар", callback_data="fp:new")],
+                [InlineKeyboardButton(text="👤 Открыть модель", callback_data=f"fm:open:{models[0]['id']}")],
+                [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
+            ]),
+        )
+    else:
+        await cb.message.answer(
+            "🚀 Быстрый старт\n\nШаг 3/3 — выбери модель, затем товар и сценарий рекламы.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text=f"📢 Реклама: {models[0]['name']} + {products[0]['title']}", callback_data=f"fc:photo:{models[0]['id']}:{products[0]['id']}")],
+                [InlineKeyboardButton(text="👤 Мои модели", callback_data="fm:list"), InlineKeyboardButton(text="📦 Мои товары", callback_data="fp:list")],
+                [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
+            ]),
         )
     await cb.answer()
