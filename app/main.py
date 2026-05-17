@@ -32,7 +32,7 @@ async def run_bot() -> None:
         billing.router,
     )
 
-    log.info("AI Content Factory bot starting. Image model: %s; video model: %s", settings.fal_model, settings.fal_video_model)
+    log.info("AI Content Factory v8 starting. Image model: %s; video model: %s; prompt provider: %s", settings.fal_model, settings.video_model_i2v, settings.prompt_provider)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 

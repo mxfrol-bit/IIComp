@@ -34,6 +34,7 @@ from app.factory_prompts import (
 from app.image_client import generate_image
 from app.identity import make_identity_dna
 from app.product_clients import generate_tryon, integrate_product, product_holding, embed_product_strict, product_lifestyle_shot
+from app.prompt_engine import improve_photo_prompt, improve_video_prompt
 from app.moderation import ModerationError, check_prompt
 from app.states import ModelCreation, ProductUpload
 from app.video_client import generate_video_from_image
@@ -195,6 +196,7 @@ async def model_niche(cb: CallbackQuery, state: FSMContext):
 
     prompt = build_hero_prompt(model)
     try:
+        prompt = await improve_photo_prompt(model=model, product=None, scenario={"label": "Главный портрет", "prompt": "hero portrait identity reference"}, draft_prompt=prompt, purpose="hero_identity")
         check_prompt(prompt)
         image_url = await generate_image(prompt=prompt, seed=seed, aspect_ratio="4:5")
         stored_url = await db.upload_image_from_url(image_url, f"factory/u{user['id']}/models/m{model['id']}/hero_{int(time.time())}.jpg")
@@ -269,27 +271,34 @@ async def model_identity_pack(cb: CallbackQuery):
         await cb.answer("Модель не найдена", show_alert=True)
         return
 
-    views = [
-        "front face portrait with the same unique facial DNA",
-        "three quarter face portrait with the same unique facial DNA",
-        "profile portrait with the same unique facial DNA",
+    all_views = [
+        "front face portrait with the same unique facial DNA, natural skin texture",
+        "three quarter face portrait with the same unique facial DNA, different expression",
+        "profile portrait with the same unique facial DNA, clean daylight",
         "full body neutral model digitals with the same face and proportions",
+        "waist-up portrait, casual natural expression, same face identity",
+        "beauty close-up with minimal makeup, same facial structure",
+        "outdoor daylight portrait, same person, realistic candid look",
+        "studio editorial portrait, same person, authentic asymmetry and pores",
     ]
+    pack_size = max(4, min(int(getattr(settings, "identity_pack_size", 8) or 8), len(all_views)))
+    views = all_views[:pack_size]
     cost = len(views)
     if not await _spend(user, cost, "identity_pack"):
         await cb.answer(f"Нужно {cost} кредитов для identity pack", show_alert=True)
         return
 
     await cb.answer("Создаю identity pack…")
-    status = await cb.message.answer("🧬 Генерирую 4 референса лица/фигуры. Это может занять пару минут.")
+    status = await cb.message.answer("🧬 Генерирую пакет постоянства лица/фигуры. Это может занять пару минут.")
     urls = list(model.get("identity_pack_json") or [])
     for i, view in enumerate(views, 1):
         try:
             prompt = build_identity_pack_prompt(model, view)
+            prompt = await improve_photo_prompt(model=model, product=None, scenario={"label": f"Identity ref {i}", "prompt": view}, draft_prompt=prompt, purpose="identity_reference")
             image_url = await generate_image(prompt=prompt, seed=int(model.get("seed") or random.randint(1, 999999)) + i, aspect_ratio="4:5")
             stored = await db.upload_image_from_url(image_url, f"factory/u{user['id']}/models/m{model_id}/identity_{i}_{int(time.time())}.jpg")
             urls.append(stored)
-            await cb.message.answer_photo(URLInputFile(stored), caption=f"Референс лица {i}/4")
+            await cb.message.answer_photo(URLInputFile(stored), caption=f"Референс лица {i}/{len(views)}")
         except Exception as e:
             log.warning("Identity ref failed: %s", e)
     db.update_ai_model(model_id, identity_pack_json=urls)
@@ -590,6 +599,7 @@ async def photo_generate(cb: CallbackQuery):
     # Important: if product is uploaded, we should actually use its image.
     # Old v3 only put product name into text prompt, so the uploaded dress/bottle never reached the model.
     prompt = build_photo_prompt(model, product, scenario)
+    prompt = await improve_photo_prompt(model=model, product=product, scenario=scenario, draft_prompt=prompt, purpose="content_photo")
     try:
         check_prompt(prompt)
     except ModerationError as e:
@@ -614,6 +624,7 @@ async def photo_generate(cb: CallbackQuery):
         if product_mode:
             # Step 1: generate a clean base image with the same AI model.
             base_prompt = build_base_scene_for_product_prompt(model, product, scenario)
+            base_prompt = await improve_photo_prompt(model=model, product=product, scenario=scenario, draft_prompt=base_prompt, purpose="product_base_scene")
             base_url = await generate_image(prompt=base_prompt, seed=seed, aspect_ratio=scenario["aspect"])
 
             if product.get("category") == "clothes":
@@ -646,6 +657,7 @@ async def photo_generate(cb: CallbackQuery):
                         )
                     elif mode == "fusion":
                         integration_prompt = build_product_integration_prompt(product, scenario)
+                        integration_prompt = await improve_photo_prompt(model=model, product=product, scenario=scenario, draft_prompt=integration_prompt, purpose="product_integration")
                         provider_url = await integrate_product(
                             scene_image_url=base_url,
                             product_image_url=product_ref,
@@ -772,6 +784,7 @@ async def video_generate(cb: CallbackQuery):
     model = db.get_ai_model(gen["model_id"], user_id=user["id"])
     product = db.get_product(gen.get("product_id"), user_id=user["id"]) if gen.get("product_id") else None
     prompt = build_video_prompt(gen, product, scenario)
+    prompt = await improve_video_prompt(content_gen=gen, product=product, scenario=scenario, draft_prompt=prompt, duration=duration, aspect_ratio=fmt)
     await cb.answer("Генерирую видео…")
     placeholder = await cb.message.answer(f"🎥 Делаю видео {duration} сек в формате {fmt}. Обычно 1–3 минуты.")
     try:

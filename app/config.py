@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     fal_model: str = "fal-ai/flux-lora"
     lora_url: str = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
     # 0.55–0.70 usually gives more diverse faces. 0.9 can make all models too similar.
-    lora_scale: float = 0.62
+    lora_scale: float = 0.45
 
     # Optional Civitai/Civitai.red API token.
     # Keep it ONLY in Railway/Shell env; never commit it to GitHub.
@@ -36,6 +36,23 @@ class Settings(BaseSettings):
     guidance_scale: float = 2.5
     enable_safety_checker: bool = True
 
+
+    # xAI / Grok prompt engine
+    xai_api_key: str | None = None
+    xai_base_url: str = "https://api.x.ai/v1"
+    prompt_provider: str = "xai"  # anthropic | xai | fallback
+    prompt_model: str = "grok-4.20-non-reasoning"
+    prompt_strategy_model: str = "grok-4.20-reasoning"
+
+    # Identity / realism controls
+    identity_pack_size: int = 8
+    enable_identity_dna: bool = True
+    enable_hero_face: bool = True
+    realism_negative_prompt: str = (
+        "plastic skin, over-smoothed face, doll face, wax skin, generic stock woman, "
+        "same default influencer face, uncanny valley, ai render look, fake glossy skin, "
+        "overperfect beauty, deformed hands, unreadable product label, product redesign"
+    )
 
     # Product-aware generation
     product_aware_mode: bool = True
@@ -58,9 +75,13 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-3-5-haiku-latest"
 
     # Video generation via fal.ai image-to-video endpoint.
-    fal_video_model: str = "fal-ai/kling-video/v2.1/standard/image-to-video"
+    video_provider: str = "fal"
+    fal_video_model: str = "wan/v2.2-a14b/image-to-video/lora"
+    video_model_i2v: str = "wan/v2.2-a14b/image-to-video/lora"
+    video_model_i2v_alt: str = "wan/v2.7/image-to-video"
     video_cost_credits: int = 3
     video_default_duration: int = 5
+    video_default_aspect: str = "9:16"
     video_allowed_durations: str = "5,10,15"
 
     # Test/promo referral link. Example: https://t.me/BOT?start=beta2000
@@ -75,8 +96,8 @@ class Settings(BaseSettings):
     # Pro quality controls
     photo_quality_mode: str = "pro"  # fast | pro | max
     prompt_quality_tail: str = (
-        "ultra realistic premium commercial campaign, high-end editorial lighting, "
-        "natural skin texture, accurate hands, clean composition, realistic product scale, "
+        "natural photorealistic premium commercial campaign, high-end editorial lighting, "
+        "visible real skin texture, authentic human asymmetry, accurate hands, clean composition, realistic product scale, "
         "ready for Instagram ads, 4k detail, no artifacts"
     )
     hero_identity_refs: int = 4

@@ -6,15 +6,15 @@ from typing import Optional
 from app.factory_catalog import PRODUCT_CATEGORIES
 
 BASE_PHOTO_STYLE = (
-    "premium commercial photography for Instagram ads, realistic high-end influencer content, "
-    "editorial lighting, natural skin texture, accurate hands, believable fabric and product materials, "
-    "clean composition, native advertising aesthetic, expensive but authentic, brand-safe, no text artifacts, no watermark, "
+    "natural photorealistic commercial photography for Instagram ads, authentic high-end influencer content, "
+    "editorial lighting, visible real skin texture, authentic human asymmetry, accurate hands, believable fabric and product materials, "
+    "clean composition, native advertising aesthetic, expensive but authentic, brand-safe, not plastic, not over-retouched, no text artifacts, no watermark, "
     "high-end e-commerce visual quality, sharp product edges, realistic shadows, premium color grading"
 )
 
 NEGATIVE_STYLE = (
     "avoid: extra fingers, distorted hands, blurry face, duplicate person, strange anatomy, broken product, "
-    "fake text, unreadable label, watermark, logo hallucination, low quality, explicit nudity, "
+    "fake text, unreadable label, watermark, logo hallucination, low quality, explicit nudity, plastic skin, doll face, wax skin, uncanny valley, over-smoothed face, "
     "generic stock woman, same face as other models, face morphing, product redesign, wrong packaging"
 )
 
