@@ -125,7 +125,7 @@ async def on_generate(cb: CallbackQuery):
                 f"Осталось фото сегодня: *{remaining}*"
             ),
             parse_mode="Markdown",
-            reply_markup=after_generation_kb(char_id, preset_key),
+            reply_markup=after_generation_kb(char_id, preset_key, gen["id"]),
         )
 
     except Exception as e:

@@ -260,3 +260,54 @@ CIVITAI_API_TOKEN=YOUR_TOKEN_FROM_CIVITAI_ACCOUNT
 Код автоматически добавит `?token=...` к URL перед отправкой в fal.ai. Токен не логируется и не пишется в Supabase.
 
 Важно: если fal.ai не сможет скачать файл с Civitai/Civitai.red даже с токеном, переключи только переменную `LORA_URL` на Hugging Face или Supabase Storage URL. Код менять не нужно.
+
+## Companion game layer: чат, ролевые сцены, видео
+
+В этой версии добавлен игровой слой поверх генерации фото:
+
+- `💬 Общаться` в карточке персонажа — включает активный чат с выбранной героиней.
+- Обычные текстовые сообщения после включения чата идут персонажу.
+- Персонаж отвечает через Anthropic Claude API, если задан `ANTHROPIC_API_KEY`.
+- Если `ANTHROPIC_API_KEY` пустой, работает fallback-режим — бот не падает и всё равно отвечает.
+- Фразы типа `пришли селфи`, `покажи фото`, `скинь фото` запускают генерацию фото из диалога.
+- `🎲 Ролевые сцены` — быстрый старт сценариев: свидание, прогулка, вечер дома, сюрприз.
+- Под фото появилась кнопка `🎥 Оживить фото` — запускает fal.ai image-to-video.
+- У пользователя появилась шкала отношений `relationship_score` от 0 до 100.
+
+### Новая миграция
+
+Перед деплоем новой версии запусти в Supabase:
+
+```sql
+supabase/005_companion_game.sql
+```
+
+Или безопасно перезапусти общий файл:
+
+```sql
+supabase/seeyou_full_setup.sql
+```
+
+### Новые переменные Railway
+
+Обязательные для фото остались прежними:
+
+```env
+TELEGRAM_BOT_TOKEN=...
+SUPABASE_URL=...
+SUPABASE_SERVICE_KEY=...
+FAL_KEY=...
+LORA_URL=...
+CIVITAI_API_TOKEN=...
+```
+
+Опциональные для чата и видео:
+
+```env
+ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-3-5-haiku-latest
+FAL_VIDEO_MODEL=fal-ai/kling-video/v1/standard/image-to-video
+VIDEO_COST_CREDITS=3
+```
+
+`ANTHROPIC_API_KEY` можно добавить позже: без него чат работает в fallback-режиме.

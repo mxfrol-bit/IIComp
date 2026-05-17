@@ -34,5 +34,13 @@ class Settings(BaseSettings):
     inference_steps: int = 40
     guidance_scale: float = 2.5
 
+    # Companion chat (optional). If empty, bot uses built-in fallback replies.
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-3-5-haiku-latest"
+
+    # Video generation via fal.ai image-to-video endpoint.
+    fal_video_model: str = "fal-ai/kling-video/v1/standard/image-to-video"
+    video_cost_credits: int = 3
+
 
 settings = Settings()

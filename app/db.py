@@ -231,6 +231,84 @@ async def upload_image_from_url(remote_url: str, dest_path: str) -> str:
     return supabase.storage.from_("generations").get_public_url(dest_path)
 
 
+# ---------- Companion chat / game state ----------
+
+def set_active_character(user_id: int, character_id: int | None, enabled: bool = True) -> None:
+    fields = {"active_character_id": character_id, "chat_enabled": enabled}
+    supabase.table("users").update(fields).eq("id", user_id).execute()
+
+
+def get_active_character_for_user(user_id: int) -> Optional[dict]:
+    res = supabase.table("users").select("active_character_id").eq("id", user_id).execute()
+    if not res.data or not res.data[0].get("active_character_id"):
+        return None
+    return get_character(res.data[0]["active_character_id"])
+
+
+def update_relationship(user_id: int, delta: int) -> int:
+    res = supabase.table("users").select("relationship_score").eq("id", user_id).execute()
+    current = 0
+    if res.data:
+        current = int(res.data[0].get("relationship_score") or 0)
+    new_score = max(0, min(100, current + delta))
+    supabase.table("users").update({"relationship_score": new_score}).eq("id", user_id).execute()
+    return new_score
+
+
+def get_relationship(user_id: int) -> int:
+    res = supabase.table("users").select("relationship_score").eq("id", user_id).execute()
+    if not res.data:
+        return 0
+    return int(res.data[0].get("relationship_score") or 0)
+
+
+def add_chat_message(user_id: int, character_id: int, role: str, content: str, event_type: str = "chat", meta: Optional[dict] = None) -> None:
+    supabase.table("chat_messages").insert({
+        "user_id": user_id,
+        "character_id": character_id,
+        "role": role,
+        "content": content,
+        "event_type": event_type,
+        "meta": meta or {},
+    }).execute()
+
+
+def get_chat_history(user_id: int, character_id: int, limit: int = 12) -> list[dict]:
+    res = supabase.table("chat_messages").select("role, content, created_at") \
+        .eq("user_id", user_id).eq("character_id", character_id) \
+        .order("created_at", desc=True).limit(limit).execute()
+    return list(reversed(res.data or []))
+
+
+def get_generation(gen_id: int, user_id: Optional[int] = None) -> Optional[dict]:
+    q = supabase.table("generations").select("*").eq("id", gen_id)
+    if user_id is not None:
+        q = q.eq("user_id", user_id)
+    res = q.execute()
+    return res.data[0] if res.data else None
+
+
+def update_generation_video(gen_id: int, video_url: str | None = None, status: str = "done", prompt: str | None = None) -> None:
+    fields: dict[str, Any] = {"video_status": status}
+    if video_url is not None:
+        fields["video_url"] = video_url
+    if prompt is not None:
+        fields["video_prompt"] = prompt
+    supabase.table("generations").update(fields).eq("id", gen_id).execute()
+
+
+async def upload_file_from_url(remote_url: str, dest_path: str, content_type: str = "application/octet-stream") -> str:
+    async with httpx.AsyncClient(timeout=180) as client:
+        resp = await client.get(remote_url)
+        resp.raise_for_status()
+        data = resp.content
+
+    supabase.storage.from_("generations").upload(
+        dest_path, data,
+        file_options={"content-type": content_type, "upsert": "true"},
+    )
+    return supabase.storage.from_("generations").get_public_url(dest_path)
+
 # ---------- Payments ----------
 
 def record_payment(user_id: int, telegram_payment_id: str, provider_payment_id: str,

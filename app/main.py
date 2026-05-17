@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.config import settings
-from app.handlers import admin, billing, character, generate, start, story
+from app.handlers import admin, billing, character, chat, generate, start, story, video
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,7 +28,9 @@ async def main() -> None:
         story.router,
         character.router,
         generate.router,
+        video.router,
         billing.router,
+        chat.router,
     )
 
     log.info("Bot starting up. fal.ai model: %s", settings.fal_model)
