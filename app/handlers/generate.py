@@ -30,6 +30,7 @@ async def on_generate(cb: CallbackQuery):
     if len(parts) != 3:
         await cb.answer("Bad callback", show_alert=True)
         return
+
     _, char_id_str, preset_key = parts
     char_id = int(char_id_str)
 
@@ -47,8 +48,9 @@ async def on_generate(cb: CallbackQuery):
 
     preset = PRESETS[preset_key]
     rating = preset.get("rating", "safe")
-    mode = rating if rating in ("safe", "romantic", "soft18") else "safe"
+    mode = rating if rating in ("safe", "romantic", "soft18", "sex") else "safe"
 
+    # Проверка доступа к soft18
     if rating == "soft18" and not _can_use_soft18(user):
         await cb.message.answer(
             "🔞 Эта сцена доступна на тарифах *Pro* и *Premium*.\n"
@@ -59,6 +61,7 @@ async def on_generate(cb: CallbackQuery):
         await cb.answer("Нужен Pro / Premium", show_alert=True)
         return
 
+    # Проверка кредитов
     if not _has_unlimited(user) and user["credits"] <= 0:
         await cb.answer(
             "🚫 Лимит на сегодня исчерпан.\nКупи Pro в меню «💎 Подписка».",
@@ -70,14 +73,14 @@ async def on_generate(cb: CallbackQuery):
     seed = random.randint(1, 2_000_000_000)
     prompt = build_prompt(persona_base, preset_key)
 
+    # === Главная проверка модерации с учётом рейтинга ===
     try:
-    preset = PRESETS.get(preset_key, {})
-    rating = preset.get("rating", "safe")
-    check_prompt(prompt, rating=rating)
-except ModerationError as e:
+        check_prompt(prompt, rating=rating)
+    except ModerationError as e:
         await cb.answer(e.reason, show_alert=True)
         return
 
+    # Списание кредитов
     credit_spent = False
     if not _has_unlimited(user):
         if not db.spend_credit(user["id"]):
@@ -138,15 +141,10 @@ except ModerationError as e:
 
         err_str = str(e).lower()
         if "safety" in err_str or "nsfw" in err_str or "filter" in err_str:
-            msg = (
-                "🚫 Сцена не прошла фильтр модерации.\n"
-                "Кредит вернул. Попробуй другую сцену."
-            )
+            msg = "🚫 Сцена не прошла фильтр модерации.\nКредит вернули. Попробуй другую сцену."
         else:
-            msg = (
-                "😞 Не получилось сгенерировать.\n"
-                "Кредит вернул, попробуй ещё раз или другую сцену."
-            )
+            msg = "😞 Не получилось сгенерировать.\nКредит вернули, попробуй ещё раз."
+
         try:
             await placeholder.edit_text(msg, reply_markup=presets_kb(char_id, mode))
         except Exception:
