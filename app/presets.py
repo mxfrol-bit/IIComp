@@ -19,10 +19,9 @@ SOFT18_TAIL = (
 )
 
 SEX_TAIL = (
-    "explicit sex scene, raw and vulgar, heavy moaning expression, ahegao elements, "
-    "sweaty skin, messy hair, hard fucking, detailed penetration, wet pussy, "
-    "creampie, cum on body, rough sex, dominant pose, realistic anatomy, "
-    "cinematic erotic lighting, very explicit and dirty"
+    "explicit sex scene, raw and vulgar, heavy moaning expression, "
+    "sweaty skin, hard thrusting, detailed penetration, wet pussy, "
+    "creampie, messy hair, realistic anatomy, cinematic erotic lighting"
 )
 
 PRESETS: dict[str, dict] = {
@@ -30,17 +29,17 @@ PRESETS: dict[str, dict] = {
     "date_close_table": {
         "label": "🔥 Близко за столиком",
         "rating": "romantic",
-        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward showing deep cleavage, hand on thigh, aroused expression"
+        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward, hand on thigh, aroused expression"
     },
     "taxi_after_date": {
         "label": "🔥 Такси после свидания",
         "rating": "romantic",
-        "scene": "back seat of taxi, skirt pulled up, sitting on his lap, hand between legs, aroused teasing face"
+        "scene": "back seat of taxi, skirt pulled up, sitting close, hand between legs, aroused teasing face"
     },
     "doorway_goodnight": {
         "label": "🔥 У двери",
         "rating": "romantic",
-        "scene": "in doorway, skirt hiked up, looking back horny, hand sliding down body"
+        "scene": "standing in doorway, skirt hiked up, looking back horny, hand sliding down body"
     },
 
     # ==================== SOFT 18+ ====================
@@ -57,7 +56,7 @@ PRESETS: dict[str, dict] = {
     "soft_beach_bikini": {
         "label": "🔞 Мокрый купальник",
         "rating": "soft18",
-        "scene": "tiny wet bikini, fabric stuck to pussy, hard nipples, camel toe, aroused expression"
+        "scene": "tiny wet bikini, fabric stuck to pussy, hard nipples visible, aroused expression"
     },
     "soft_late_text": {
         "label": "🔥 Позднее сообщение",
@@ -72,49 +71,44 @@ PRESETS: dict[str, dict] = {
     "soft_mirror_selfie": {
         "label": "🔥 Зеркальное селфи",
         "rating": "soft18",
-        "scene": "completely naked or tiny thong, leg up, spreading ass or touching pussy from behind, dirty look"
+        "scene": "completely naked or tiny thong, leg up, touching or spreading pussy, dirty seductive look"
     },
 
     # ==================== SEX SCENES (18+) ====================
     "sex_doggy": {
         "label": "🔞 Сзади (doggy)",
         "rating": "sex",
-        "scene": "doggy style sex, taken from behind, back arched, ass up, hard pounding, sweaty skin, moaning face, hair pulled, very explicit"
+        "scene": "doggy style, taken from behind, back arched, hard pounding, sweaty skin, moaning face"
     },
     "sex_riding": {
-        "label": "🔞 Наездница (riding)",
+        "label": "🔞 Наездница",
         "rating": "sex",
-        "scene": "cowgirl position, riding hard, bouncing breasts, hands on his chest, head thrown back in pleasure, explicit penetration"
+        "scene": "cowgirl, riding hard, bouncing, head thrown back in pleasure, explicit penetration"
     },
     "sex_missionary": {
         "label": "🔞 Миссионер",
         "rating": "sex",
-        "scene": "missionary sex, legs spread wide, deep penetration, intense eye contact, moaning, hands gripping sheets, sweaty bodies"
+        "scene": "missionary position, legs spread wide, deep penetration, intense moaning, gripping sheets"
     },
     "sex_blowjob": {
         "label": "🔞 Минет",
         "rating": "sex",
-        "scene": "on knees giving blowjob, looking up with teary eyes, messy saliva, deepthroat, aroused submissive expression"
+        "scene": "on knees giving blowjob, looking up, messy, deepthroat, submissive aroused expression"
     },
     "sex_from_behind_standing": {
         "label": "🔞 Стоя сзади",
         "rating": "sex",
-        "scene": "standing doggy against wall or table, skirt lifted, hard fucking from behind, hand on throat or hair, dirty expression"
+        "scene": "standing doggy against wall, hard fucking from behind, hair pulled, dirty expression"
     },
     "sex_creampie": {
         "label": "🔞 Кремпай",
         "rating": "sex",
-        "scene": "after creampie, cum leaking out of pussy, legs spread, satisfied and used expression, messy and vulgar"
+        "scene": "after creampie, cum leaking out, legs spread, satisfied used expression, very explicit"
     },
     "sex_against_wall": {
         "label": "🔞 У стены",
         "rating": "sex",
-        "scene": "lifted against the wall, legs wrapped around, hard deep fucking, intense kissing and moaning, very explicit"
-    },
-    "sex_prone_bone": {
-        "label": "🔞 Prone bone",
-        "rating": "sex",
-        "scene": "lying flat on stomach, fucked from behind, ass squeezed, deep penetration, moaning into pillow, raw and vulgar"
+        "scene": "lifted against the wall, legs wrapped, hard deep fucking, intense sex"
     },
 }
 
@@ -135,4 +129,24 @@ def get_presets_for_mode(mode: str) -> dict[str, dict]:
     if mode == "romantic":
         return {k: v for k, v in PRESETS.items() if v.get("rating") == "romantic"}
     if mode == "soft18":
-        return {k: v for k, v in PRESETS.items() if v.get("rating
+        return {k: v for k, v in PRESETS.items() if v.get("rating") == "soft18"}
+    if mode == "sex":
+        return {k: v for k, v in PRESETS.items() if v.get("rating") == "sex"}
+    return {k: v for k, v in PRESETS.items() if v.get("rating") == "safe"}
+
+
+def rating_tail(rating: str) -> str:
+    if rating == "romantic":
+        return ROMANTIC_TAIL
+    if rating == "soft18":
+        return SOFT18_TAIL
+    if rating == "sex":
+        return SEX_TAIL
+    return QUALITY_TAIL
+
+
+def build_prompt(persona_base: str, preset_key: str) -> str:
+    preset = PRESETS.get(preset_key)
+    if not preset:
+        return f"{BASE_TRIGGERS}, {persona_base}, {QUALITY_TAIL}"
+    return f"{BASE_TRIGGERS}, {persona_base}, {preset['scene']}, {rating_tail(preset.get('rating', 'safe'))}"
