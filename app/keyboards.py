@@ -46,6 +46,14 @@ def content_home_kb() -> InlineKeyboardMarkup:
     ])
 
 
+def locked_soft18_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💎 Открыть Pro / Premium", callback_data="billing:menu")],
+        [InlineKeyboardButton(text="📸 Обычные сцены", callback_data="char:list")],
+        [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
+    ])
+
+
 def _grid(items: dict, cb_prefix: str, cols: int = 2) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for key, (label, _) in items.items():
@@ -81,6 +89,7 @@ def characters_kb(characters: list[dict]) -> InlineKeyboardMarkup:
 
 
 def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
+    """Карточка персонажа с кнопкой Секс"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
         [InlineKeyboardButton(text="☕ Первая встреча", callback_data=f"game:meet:{character_id}")],
@@ -98,8 +107,7 @@ def presets_kb(character_id: int, mode: str = "safe") -> InlineKeyboardMarkup:
 
     presets = get_presets_for_mode(mode)
     for key, preset in presets.items():
-        label = preset["label"]
-        kb.button(text=label, callback_data=f"gen:{character_id}:{key}")
+        kb.button(text=preset["label"], callback_data=f"gen:{character_id}:{key}")
 
     kb.adjust(2)
 
@@ -112,6 +120,14 @@ def presets_kb(character_id: int, mode: str = "safe") -> InlineKeyboardMarkup:
 
     kb.adjust(2)
     return kb.as_markup()
+
+
+def billing_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⭐ Pro — 100 фото/день + Soft 18+", callback_data="billing:buy:pro")],
+        [InlineKeyboardButton(text="💎 Premium — без лимита", callback_data="billing:buy:premium")],
+        [InlineKeyboardButton(text="◀ Меню", callback_data="menu")],
+    ])
 
 
 def after_generation_kb(character_id: int, preset_key: str, gen_id: int | None = None) -> InlineKeyboardMarkup:
@@ -130,5 +146,25 @@ def after_generation_kb(character_id: int, preset_key: str, gen_id: int | None =
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-# Остальные клавиатуры (billing, chat и т.д.) оставил без изменений для краткости
-# Если нужно — могу дать полный файл
+def chat_home_kb(character_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Мне хочется увидеть тебя", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="💕 К её профилю", callback_data=f"char:open:{character_id}")],
+    ])
+
+
+def after_chat_photo_kb(character_id: int, gen_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎥 Да, хочу видео", callback_data=f"video:gen:{gen_id}")],
+        [InlineKeyboardButton(text="📩 Ещё один её момент", callback_data=f"chat:photo:{character_id}")],
+        [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
+        [InlineKeyboardButton(text="◀ В меню", callback_data="menu")],
+    ])
+
+
+def after_video_kb(character_id: int | None = None) -> InlineKeyboardMarkup:
+    rows = []
+    if character_id is not None:
+        rows.append([InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")])
+    rows.append([InlineKeyboardButton(text="◀ В меню", callback_data="menu")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
