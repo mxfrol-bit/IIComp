@@ -1,133 +1,43 @@
-"""Scene presets with heavy 18+ and vulgar content."""
+import asyncio
+import logging
 
-BASE_TRIGGERS = "amateurish phone photo, shot on iPhone, slightly noisy, natural skin texture, realistic"
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.memory import MemoryStorage
 
-QUALITY_TAIL = "natural skin texture, candid moment, soft daylight, depth of field, realistic everyday photo"
+from app.config import settings
+from app.handlers import admin, billing, character, chat, game, generate, start, story, video
 
-ROMANTIC_TAIL = (
-    "intense sexual tension, heavy bedroom eyes, slightly parted wet lips, "
-    "flushed skin, subtle arching back, teasing and aroused expression, "
-    "cinematic erotic mood, realistic"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-
-SOFT18_TAIL = (
-    "extremely seductive and vulgar, highly aroused expression, heavy bedroom eyes, "
-    "mouth slightly open, tongue visible, flushed face and chest, hard nipples, "
-    "wet fabric clinging to pussy, hand between legs or touching herself, "
-    "legs slightly spread, back arched, wet skin, erotic and dirty mood, "
-    "realistic skin texture, cinematic soft lighting"
-)
-
-# callback_data лимит Telegram 64 байта
-PRESETS: dict[str, dict] = {
-    # ==================== ROMANTIC (с сильным напряжением) ====================
-    "date_close_table": {
-        "label": "🔥 Близко за столиком",
-        "rating": "romantic",
-        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward showing deep cleavage, hand on thigh, aroused expression, warm candle light"
-    },
-    "taxi_after_date": {
-        "label": "🔥 Такси после свидания",
-        "rating": "romantic",
-        "scene": "back seat of taxi at night, city lights, sitting on his lap or very close, skirt pulled up, hand between her legs, aroused and teasing face, messy hair"
-    },
-    "doorway_goodnight": {
-        "label": "🔥 У двери",
-        "rating": "romantic",
-        "scene": "standing in doorway after date, one leg slightly lifted, skirt hiked up, looking back with horny expression, hand sliding down her body, warm light"
-    },
-    "slow_dance_home": {
-        "label": "🔥 Медленный танец дома",
-        "rating": "romantic",
-        "scene": "slow dancing in dim light, pressed against each other, her ass grinding, hand on his crotch area, aroused expression, heavy breathing"
-    },
-
-    # ==================== SOFT 18+ (максимально пошлые) ====================
-    "soft_pajama": {
-        "label": "🔞 Пижама",
-        "rating": "soft18",
-        "scene": "lying on bed in thin silk pajamas, top completely unbuttoned, hard nipples visible, hand inside panties, legs spread, aroused moaning expression, messy hair"
-    },
-    "soft_lingerie_shirt": {
-        "label": "🔞 Только его рубашка",
-        "rating": "soft18",
-        "scene": "wearing only oversized white shirt completely open, no panties, sitting on bed with legs spread, fingers touching her pussy, seductive dirty look at camera"
-    },
-    "soft_beach_bikini": {
-        "label": "🔞 Мокрый купальник",
-        "rating": "soft18",
-        "scene": "on beach in tiny wet bikini, fabric stuck to pussy and nipples, hard nipples and camel toe visible, aroused expression, water dripping down body, golden hour"
-    },
-    "soft_bathrobe": {
-        "label": "🔞 После душа",
-        "rating": "soft18",
-        "scene": "standing in front of mirror with open bathrobe, completely naked underneath, wet skin, hard nipples, one hand between her legs, aroused face, steam"
-    },
-    "soft_bed_blanket": {
-        "label": "🔞 Утро под одеялом",
-        "rating": "soft18",
-        "scene": "lying in bed, thin blanket barely covering, completely naked, legs spread, hand between thighs touching herself, sleepy horny expression, morning light"
-    },
-    "soft_late_text": {
-        "label": "🔥 Позднее сообщение",
-        "rating": "soft18",
-        "scene": "late night bedroom photo, lying on stomach wearing only tiny panties, ass up, looking back at camera with slutty expression, hand pulling panties aside"
-    },
-    "soft_his_hoodie": {
-        "label": "🔥 В его худи",
-        "rating": "soft18",
-        "scene": "wearing only his big hoodie, nothing underneath, sitting with legs wide open, hoodie lifted up, pussy visible, teasing and horny expression"
-    },
-    "soft_dressing_room": {
-        "label": "🔥 Примерочная",
-        "rating": "soft18",
-        "scene": "in dressing room trying on lingerie, mirror selfie, pulling panties to the side, fingers on clit, aroused expression, biting lip"
-    },
-    "soft_after_date": {
-        "label": "🔥 После свидания",
-        "rating": "soft18",
-        "scene": "just got home after date, dress pulled down, bra off, sitting on bed touching herself, messy hair, horny and satisfied expression"
-    },
-    "soft_rain_shirt": {
-        "label": "🔥 Мокрая рубашка",
-        "rating": "soft18",
-        "scene": "standing in rain in white shirt with no bra, completely wet and see-through, hard nipples, shirt stuck to body, hand between legs, aroused face"
-    },
-    "soft_mirror_selfie": {
-        "label": "🔥 Зеркальное селфи",
-        "rating": "soft18",
-        "scene": "mirror selfie in bedroom, completely naked or in tiny thong, one leg up on chair, spreading ass or touching pussy from behind, dirty seductive look"
-    },
-}
-
-MODE_TITLES = {
-    "safe": "📸 Обычные сцены",
-    "romantic": "❤️ Романтика",
-    "soft18": "🔥 Ближе (18+)",
-    "all": "🎬 Все сцены",
-}
+log = logging.getLogger(__name__)
 
 
-def get_presets_for_mode(mode: str) -> dict[str, dict]:
-    if mode == "all":
-        return PRESETS
-    if mode == "safe":
-        return {k: v for k, v in PRESETS.items() if v.get("rating") == "safe"}
-    if mode == "romantic":
-        return {k: v for k, v in PRESETS.items() if v.get("rating") == "romantic"}
-    if mode == "soft18":
-        return {k: v for k, v in PRESETS.items() if v.get("rating") == "soft18"}
-    return {k: v for k, v in PRESETS.items() if v.get("rating") == "safe"}
+async def main() -> None:
+    bot = Bot(
+        token=settings.telegram_bot_token,
+        default=DefaultBotProperties(parse_mode=None),
+    )
+    dp = Dispatcher(storage=MemoryStorage())
+
+    dp.include_routers(
+        start.router,
+        admin.router,
+        story.router,
+        character.router,
+        game.router,
+        generate.router,
+        video.router,
+        billing.router,
+        chat.router,
+    )
+
+    log.info("Bot starting up. fal.ai model: %s", settings.fal_model)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
-def rating_tail(rating: str) -> str:
-    if rating == "romantic":
-        return ROMANTIC_TAIL
-    if rating == "soft18":
-        return SOFT18_TAIL
-    return QUALITY_TAIL
-
-
-def build_prompt(persona_base: str, preset_key: str) -> str:
-    preset = PRESETS[preset_key]
-    return f"{BASE_TRIGGERS}, {persona_base}, {preset['scene']}, {rating_tail(preset.get('rating', 'safe'))}"
+if __name__ == "__main__":
+    asyncio.run(main())
