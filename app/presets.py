@@ -19,70 +19,60 @@ SOFT18_TAIL = (
 )
 
 SEX_TAIL = (
-    "explicit sex scene, raw and vulgar, heavy moaning expression, "
-    "sweaty skin, hard thrusting, detailed penetration, wet pussy, "
-    "creampie, messy hair, realistic anatomy, cinematic erotic lighting"
-)
-
-PRESETS: dict[str, dict] = {
-    # ==================== ROMANTIC ====================
-    "date_close_table": {
-        "label": "🔥 Близко за столиком",
-        "rating": "romantic",
-        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward, hand on thigh, aroused expression"
-    },
-    "taxi_after_date": {
-        "label": "🔥 Такси после свидания",
-        "rating": "romantic",
-        "scene": "back seat of taxi, skirt pulled up, sitting close, hand between legs, aroused teasing face"
-    },
-    "doorway_goodnight": {
-        "label": "🔥 У двери",
-        "rating": "romantic",
-        "scene": "standing in doorway, skirt hiked up, looking back horny, hand sliding down body"
-    },
-
-    # ==================== SOFT 18+ ====================
-    "soft_pajama": {
-        "label": "🔞 Пижама",
-        "rating": "soft18",
-        "scene": "lying on bed in thin pajamas, top unbuttoned, hard nipples, hand inside panties, legs spread, aroused moaning face"
-    },
-    "soft_lingerie_shirt": {
-        "label": "🔞 Только его рубашка",
-        "rating": "soft18",
-        "scene": "wearing only open white shirt, no panties, legs spread, fingers touching pussy, dirty seductive look"
-    },
-    "soft_beach_bikini": {
-        "label": "🔞 Мокрый купальник",
-        "rating": "soft18",
-        "scene": "tiny wet bikini, fabric stuck to pussy, hard nipples visible, aroused expression"
-    },
-    "soft_late_text": {
-        "label": "🔥 Позднее сообщение",
-        "rating": "soft18",
-        "scene": "lying on stomach in tiny panties, ass up, looking back slutty, hand pulling panties aside"
-    },
-    "soft_his_hoodie": {
-        "label": "🔥 В его худи",
-        "rating": "soft18",
-        "scene": "only oversized hoodie, nothing underneath, legs wide open, pussy visible, horny expression"
-    },
-    "soft_mirror_selfie": {
-        "label": "🔥 Зеркальное селфи",
-        "rating": "soft18",
-        "scene": "completely naked or tiny thong, leg up, touching or spreading pussy, dirty seductive look"
-    },
-
-    # ==================== SEX (жёсткий explicit) ====================
-SEX_TAIL = (
     "explicit hardcore sex, raw penetration, visible pussy and cock, wet and glistening, "
     "detailed genitals, deep thrusting, sweaty skin, flushed face, moaning expression, "
     "ahegao elements, messy hair, intense eye contact or rolled eyes, realistic anatomy, "
     "cinematic erotic lighting, highly detailed, vulgar dirty atmosphere, raw and unfiltered"
 )
 
-PRESETS.update({
+PRESETS: dict[str, dict] = {
+    # ==================== SAFE ====================
+    "kitchen_coffee": {
+        "label": "☕ На кухне с кофе",
+        "rating": "safe",
+        "scene": "standing in kitchen holding white coffee mug, casual grey t-shirt, natural pose, soft smile"
+    },
+    "mirror_selfie": {
+        "label": "🪞 Зеркальное селфи",
+        "rating": "safe",
+        "scene": "mirror selfie in bedroom, casual clothes, natural pose"
+    },
+
+    # ==================== ROMANTIC ====================
+    "date_close_table": {
+        "label": "❤️ Близко за столиком",
+        "rating": "romantic",
+        "scene": "sitting very close, intense eye contact, biting lower lip, leaning forward showing deep cleavage, hand on thigh, aroused expression, warm candle light"
+    },
+    "taxi_after_date": {
+        "label": "❤️ Такси после свидания",
+        "rating": "romantic",
+        "scene": "back seat of taxi at night, city lights, sitting very close, skirt slightly pulled up, intense eye contact"
+    },
+
+    # ==================== SOFT 18+ ====================
+    "soft_pajama": {
+        "label": "🔥 Пижама",
+        "rating": "soft18",
+        "scene": "bedroom selfie in silk pajamas, unbuttoned top, deep cleavage, seductive look"
+    },
+    "soft_lingerie_shirt": {
+        "label": "🔥 Только его рубашка",
+        "rating": "soft18",
+        "scene": "wearing oversized white shirt with nothing underneath, unbuttoned, nipples visible through fabric, seductive mirror selfie"
+    },
+    "soft_wet_shirt": {
+        "label": "🔥 Мокрая рубашка",
+        "rating": "soft18",
+        "scene": "standing in rain in white shirt with no bra, completely wet and see-through, hard nipples, shirt stuck to body"
+    },
+    "soft_mirror_selfie": {
+        "label": "🔥 Зеркальное селфи",
+        "rating": "soft18",
+        "scene": "mirror selfie in bedroom, tiny thong, one leg up, seductive and slightly vulgar pose"
+    },
+
+    # ==================== SEX (жёсткий explicit) ====================
     "sex_doggy": {
         "label": "🔞 Сзади (doggy)",
         "rating": "sex",
@@ -158,7 +148,7 @@ PRESETS.update({
             "sweaty skin, raw and vulgar reverse cowgirl"
         )
     },
-})
+}
 
 MODE_TITLES = {
     "safe": "📸 Обычные сцены",
@@ -167,7 +157,6 @@ MODE_TITLES = {
     "sex": "🔞 Секс",
     "all": "🎬 Все сцены",
 }
-
 
 def get_presets_for_mode(mode: str) -> dict[str, dict]:
     if mode == "all":
@@ -182,7 +171,6 @@ def get_presets_for_mode(mode: str) -> dict[str, dict]:
         return {k: v for k, v in PRESETS.items() if v.get("rating") == "sex"}
     return {k: v for k, v in PRESETS.items() if v.get("rating") == "safe"}
 
-
 def rating_tail(rating: str) -> str:
     if rating == "romantic":
         return ROMANTIC_TAIL
@@ -192,9 +180,6 @@ def rating_tail(rating: str) -> str:
         return SEX_TAIL
     return QUALITY_TAIL
 
-
 def build_prompt(persona_base: str, preset_key: str) -> str:
-    preset = PRESETS.get(preset_key)
-    if not preset:
-        return f"{BASE_TRIGGERS}, {persona_base}, {QUALITY_TAIL}"
+    preset = PRESETS[preset_key]
     return f"{BASE_TRIGGERS}, {persona_base}, {preset['scene']}, {rating_tail(preset.get('rating', 'safe'))}"
