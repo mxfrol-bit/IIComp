@@ -89,7 +89,6 @@ def characters_kb(characters: list[dict]) -> InlineKeyboardMarkup:
 
 
 def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
-    """Карточка персонажа с кнопкой Секс"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💬 Написать ей", callback_data=f"chat:start:{character_id}")],
         [InlineKeyboardButton(text="☕ Первая встреча", callback_data=f"game:meet:{character_id}")],
@@ -102,6 +101,13 @@ def character_detail_kb(character_id: int) -> InlineKeyboardMarkup:
     ])
 
 
+def delete_confirm_kb(character_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Да, удалить", callback_data=f"char:delete:{character_id}")],
+        [InlineKeyboardButton(text="◀ Отмена", callback_data=f"char:open:{character_id}")],
+    ])
+
+
 def presets_kb(character_id: int, mode: str = "safe") -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
 
@@ -111,7 +117,6 @@ def presets_kb(character_id: int, mode: str = "safe") -> InlineKeyboardMarkup:
 
     kb.adjust(2)
 
-    # Кнопки переключения режимов
     kb.button(text="📸 Обычные", callback_data=f"char:scenes:{character_id}:safe")
     kb.button(text="❤️ Романтика", callback_data=f"char:scenes:{character_id}:romantic")
     kb.button(text="🔥 Soft 18+", callback_data=f"char:scenes:{character_id}:soft18")
