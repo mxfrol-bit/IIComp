@@ -348,3 +348,135 @@ def record_payment(user_id: int, telegram_payment_id: str, provider_payment_id: 
         "tier": tier,
         "status": "completed",
     }).execute()
+
+# ---------- AI Content Factory v3 ----------
+
+def create_ai_model(user_id: int, name: str, persona_json: dict, niche: str, seed: int) -> dict:
+    res = supabase.table("ai_models").insert({
+        "user_id": user_id,
+        "name": name,
+        "persona_json": persona_json,
+        "niche": niche,
+        "seed": seed,
+    }).execute()
+    return res.data[0]
+
+
+def get_user_ai_models(user_id: int) -> list[dict]:
+    res = supabase.table("ai_models").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+    return res.data or []
+
+
+def get_ai_model(model_id: int, user_id: Optional[int] = None) -> Optional[dict]:
+    q = supabase.table("ai_models").select("*").eq("id", model_id)
+    if user_id is not None:
+        q = q.eq("user_id", user_id)
+    res = q.execute()
+    return res.data[0] if res.data else None
+
+
+def update_ai_model(model_id: int, **fields: Any) -> None:
+    supabase.table("ai_models").update(fields).eq("id", model_id).execute()
+
+
+def delete_ai_model(model_id: int, user_id: int) -> bool:
+    model = get_ai_model(model_id, user_id=user_id)
+    if not model:
+        return False
+    supabase.table("ai_models").delete().eq("id", model_id).execute()
+    return True
+
+
+def create_product(user_id: int, title: str, category: str, description: str, primary_image_url: str, extra_images: list[str]) -> dict:
+    res = supabase.table("products").insert({
+        "user_id": user_id,
+        "title": title,
+        "category": category,
+        "description": description,
+        "primary_image_url": primary_image_url,
+        "extra_images_json": extra_images,
+    }).execute()
+    return res.data[0]
+
+
+def get_user_products(user_id: int) -> list[dict]:
+    res = supabase.table("products").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+    return res.data or []
+
+
+def get_product(product_id: int, user_id: Optional[int] = None) -> Optional[dict]:
+    q = supabase.table("products").select("*").eq("id", product_id)
+    if user_id is not None:
+        q = q.eq("user_id", user_id)
+    res = q.execute()
+    return res.data[0] if res.data else None
+
+
+def delete_product(product_id: int, user_id: int) -> bool:
+    product = get_product(product_id, user_id=user_id)
+    if not product:
+        return False
+    supabase.table("products").delete().eq("id", product_id).execute()
+    return True
+
+
+def create_content_generation(
+    user_id: int,
+    model_id: int,
+    product_id: Optional[int],
+    content_type: str,
+    scenario_key: str,
+    prompt: str,
+    fmt: str | None = None,
+    duration_sec: int | None = None,
+) -> dict:
+    res = supabase.table("content_generations").insert({
+        "user_id": user_id,
+        "model_id": model_id,
+        "product_id": product_id,
+        "content_type": content_type,
+        "scenario_key": scenario_key,
+        "prompt": prompt,
+        "format": fmt,
+        "duration_sec": duration_sec,
+        "status": "pending",
+    }).execute()
+    return res.data[0]
+
+
+def update_content_generation(gen_id: int, **fields: Any) -> None:
+    supabase.table("content_generations").update(fields).eq("id", gen_id).execute()
+
+
+def get_content_generation(gen_id: int, user_id: Optional[int] = None) -> Optional[dict]:
+    q = supabase.table("content_generations").select("*").eq("id", gen_id)
+    if user_id is not None:
+        q = q.eq("user_id", user_id)
+    res = q.execute()
+    return res.data[0] if res.data else None
+
+
+def get_recent_content_generations(user_id: int, limit: int = 10) -> list[dict]:
+    res = supabase.table("content_generations").select("*") \
+        .eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+    return res.data or []
+
+
+def save_content_plan(user_id: int, model_id: int, product_id: Optional[int], niche: str, result_json: dict) -> dict:
+    res = supabase.table("content_plans").insert({
+        "user_id": user_id,
+        "model_id": model_id,
+        "product_id": product_id,
+        "niche": niche,
+        "result_json": result_json,
+    }).execute()
+    return res.data[0]
+
+
+async def upload_bytes(data: bytes, dest_path: str, content_type: str = "application/octet-stream") -> str:
+    supabase.storage.from_("generations").upload(
+        dest_path,
+        data,
+        file_options={"content-type": content_type, "upsert": "true"},
+    )
+    return supabase.storage.from_("generations").get_public_url(dest_path)

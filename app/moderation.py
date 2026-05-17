@@ -1,81 +1,38 @@
-"""Prompt safety filter.
-
-Разрешены:
-- safe / romantic / soft18 (без explicit)
-- sex (явно разрешён explicit-контент)
+"""Prompt moderation for AI Content Factory.
+Main product is brand-safe commercial content. Private module is hidden and not part of default flow.
 """
-
-import re
-
-MINOR_TERMS = [
-    "child", "kid", "minor", "underage", "teen", "teenage", "teenager",
-    "young girl", "young boy", "schoolgirl", "schoolboy",
-    "pre-teen", "preteen", "toddler", "infant", "baby",
-    "ребен", "ребён", "детск", "несовершен", "школьниц", "школьник", "малолет",
-]
-
-AGE_RE = re.compile(
-    r"\b(?:(?:age|aged|years?\s*old|y\.?o\.?|г\.?|лет)\s*[:\-]?\s*)?"
-    r"(?P<n>[1-9]|1[0-7])\s*(?:years?\s*old|y\.?o\.?|лет|год|года)\b",
-    re.IGNORECASE,
-)
-
-# Блокируем только самое жёсткое (насилие, несовершеннолетних, знаменитостей)
-VIOLENCE_TERMS = ["rape", "torture", "mutilation", "gore", "snuff", "forced", "coercion", "изнасил", "пытк"]
-CELEB_TERMS = ["taylor swift", "scarlett johansson", "emma watson", "billie eilish", "selena gomez"]
-PROMPT_INJECTION_TERMS = ["ignore previous instructions", "ignore safety", "disable safety", "бeз цензуры"]
+from __future__ import annotations
 
 class ModerationError(Exception):
-    def __init__(self, reason: str, code: str = "blocked"):
+    def __init__(self, reason: str, code: str = "moderation"):
+        super().__init__(reason)
         self.reason = reason
         self.code = code
-        super().__init__(reason)
 
-def _contains_any(text: str, terms: list[str]) -> str | None:
-    for term in terms:
-        if term in text:
-            return term
-    return None
 
-def check_prompt(prompt: str, rating: str = "safe") -> None:
-    p = prompt.lower()
+MINOR_TERMS = (
+    "teen", "underage", "minor", "schoolgirl", "школьница", "несовершеннолет", "малолет", "девочка",
+)
+VIOLENCE_TERMS = (
+    "blood", "gore", "violence", "weapon", "knife", "gun", "насилие", "кровь", "оружие", "нож", "пистолет",
+)
+EXPLICIT_TERMS = (
+    "explicit sex", "hardcore", "porn", "porno", "genitals", "vagina", "penis", "oral sex",
+    "penetration", "intercourse", "cumshot", "fully naked", "bare breasts", "topless", "nude", "naked",
+    "порно", "секс", "гениталии", "член", "вагина", "проникновение", "минет", "конч", "голая", "нюд",
+)
+CELEB_TERMS = (
+    "celebrity", "famous actress", "famous singer", "селеб", "звезда", "как у знаменитости",
+)
 
-    # Блокируем попытки обхода модерации
-    if _contains_any(p, PROMPT_INJECTION_TERMS):
-        raise ModerationError("Запрос отклонён: попытка обхода правил запрещена.", code="injection")
 
-    # Блокируем несовершеннолетних
-    if _contains_any(p, MINOR_TERMS):
-        raise ModerationError("Запрос отклонён: упоминание несовершеннолетних запрещено.", code="minor")
-
-    m = AGE_RE.search(p)
-    if m and int(m.group("n")) < 18:
-        raise ModerationError("Запрос отклонён: возраст должен быть 18+.", code="underage")
-
-    # Насилие и принуждение — всегда блокируем
-    if _contains_any(p, VIOLENCE_TERMS):
-        raise ModerationError("Запрос отклонён: насилие и принуждение запрещены.", code="violence")
-
-    # Знаменитости — блокируем
-    if _contains_any(p, CELEB_TERMS):
-        raise ModerationError("Запрос отклонён: запрещено использовать образы реальных публичных персон.", code="celebrity")
-
-    # === Главное изменение ===
-    # Для рейтинга "sex" разрешаем explicit-контент
-    if rating == "sex":
-        return  # Пропускаем дальнейшие проверки
-
-    # Для остальных режимов (soft18 и ниже) оставляем старые ограничения
-    EXPLICIT_TERMS = [
-        "explicit sex", "hardcore", "porn", "porno", "genitals", "vagina", "penis",
-        "oral sex", "blowjob", "handjob", "penetration", "intercourse", "cumshot",
-        "nude", "naked", "fully naked", "topless", "bare breasts", "spread legs",
-        "порно", "секс", "генитал", "вагин", "пенис", "минет", "оральн", "проникнов",
-        "голая", "голый", "обнажен", "обнажён", "топлес",
-    ]
-
-    if _contains_any(p, EXPLICIT_TERMS):
-        raise ModerationError(
-            "Запрос отклонён: сервис поддерживает soft 18+ без explicit-контента.",
-            code="explicit",
-        )
+def check_prompt(prompt: str, rating: str = "brand_safe") -> None:
+    text = (prompt or "").lower()
+    if any(t in text for t in MINOR_TERMS):
+        raise ModerationError("Запрос отклонён: нельзя генерировать несовершеннолетних.", "minor")
+    if any(t in text for t in VIOLENCE_TERMS):
+        raise ModerationError("Запрос отклонён: насилие/оружие не поддерживаются.", "violence")
+    if any(t in text for t in CELEB_TERMS):
+        raise ModerationError("Запрос отклонён: публичные персоны/селебы не поддерживаются.", "celebrity")
+    if any(t in text for t in EXPLICIT_TERMS):
+        raise ModerationError("Запрос отклонён: основной сервис делает brand-safe контент без explicit.", "explicit")

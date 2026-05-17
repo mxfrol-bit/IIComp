@@ -6,7 +6,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.config import settings
-from app.handlers import admin, billing, character, chat, game, generate, start, story, video
+from app.handlers import admin, billing, factory, start
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,16 +25,11 @@ async def main() -> None:
     dp.include_routers(
         start.router,
         admin.router,
-        story.router,
-        character.router,
-        game.router,
-        generate.router,
-        video.router,
+        factory.router,
         billing.router,
-        chat.router,
     )
 
-    log.info("Bot starting up. fal.ai model: %s", settings.fal_model)
+    log.info("AI Content Factory starting. Image model: %s; video model: %s", settings.fal_model, settings.fal_video_model)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 

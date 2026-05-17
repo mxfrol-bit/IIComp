@@ -33,14 +33,17 @@ class Settings(BaseSettings):
     civitai_api_token: str | None = None
     inference_steps: int = 40
     guidance_scale: float = 2.5
+    enable_safety_checker: bool = True
 
     # Companion chat (optional). If empty, bot uses built-in fallback replies.
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-3-5-haiku-latest"
 
     # Video generation via fal.ai image-to-video endpoint.
-    fal_video_model: str = "fal-ai/kling-video/v1/standard/image-to-video"
+    fal_video_model: str = "fal-ai/kling-video/v2.1/standard/image-to-video"
     video_cost_credits: int = 3
+    video_default_duration: int = 5
+    video_allowed_durations: str = "5,10,15"
 
     # Test/promo referral link. Example: https://t.me/BOT?start=beta2000
     promo_ref_code: str = "beta2000"

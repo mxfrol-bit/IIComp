@@ -10,19 +10,25 @@ log = logging.getLogger(__name__)
 os.environ["FAL_KEY"] = settings.fal_key
 
 
-async def generate_video_from_image(image_url: str, prompt: str | None = None) -> str:
+async def generate_video_from_image(
+    image_url: str,
+    prompt: str | None = None,
+    *,
+    duration: int = 5,
+    aspect_ratio: str = "9:16",
+) -> str:
     """Generate a short video from a still image. Returns provider video URL."""
     video_prompt = prompt or (
-        "subtle cinematic movement, natural blinking, slight camera push-in, "
-        "soft hair movement, realistic phone video, tasteful romantic mood"
+        "subtle commercial motion, natural blinking, slight camera push-in, "
+        "realistic social media video, brand-safe premium ad"
     )
     arguments = {
         "image_url": image_url,
         "prompt": video_prompt,
-        "duration": "5",
-        "aspect_ratio": "9:16",
+        "duration": str(duration),
+        "aspect_ratio": aspect_ratio,
     }
-    log.info("fal.ai video run: model=%s image=%s", settings.fal_video_model, image_url[:80])
+    log.info("fal.ai video run: model=%s image=%s duration=%s aspect=%s", settings.fal_video_model, image_url[:80], duration, aspect_ratio)
     result = await fal_client.subscribe_async(
         settings.fal_video_model,
         arguments=arguments,

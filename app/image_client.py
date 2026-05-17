@@ -67,7 +67,7 @@ async def generate_image(
         "guidance_scale": settings.guidance_scale,
         "seed": seed,
         "num_images": 1,
-        "enable_safety_checker": False,   # ← Очень важно для 18+!
+        "enable_safety_checker": settings.enable_safety_checker,
         "output_format": "jpeg",
     }
 
