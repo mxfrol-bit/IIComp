@@ -11,10 +11,11 @@ from app.companion_client import (
     detect_intent,
     generate_companion_reply,
     relationship_delta,
+    suggestion_to_user_text,
 )
 from app.config import settings
 from app.image_client import generate_image
-from app.keyboards import after_chat_photo_kb, chat_home_kb, roleplay_kb
+from app.keyboards import after_chat_photo_kb, chat_home_kb, chat_suggestions_kb, free_chat_hint_kb, roleplay_kb
 from app.moderation import ModerationError, check_prompt
 
 router = Router()
@@ -96,13 +97,13 @@ async def on_chat_start(cb: CallbackQuery):
     db.set_active_character(user["id"], char_id, enabled=True)
     score = db.get_relationship(user["id"])
     text = (
-        f"💬 *{char['name']} на связи*\n\n"
+        f"💬 *{char['name']} рядом*\n\n"
         f"Отношения: *{score}/100*\n\n"
-        "Пиши ей обычным сообщением — как в чате. Она отвечает от своего характера и помнит последние реплики.\n\n"
-        "Пиши естественно: «как ты?», «я бы хотел увидеть тебя», «давай встретимся», «что бы ты сделала, если бы я был рядом?»."
+        "Просто пиши ей как в обычном чате. Кнопки ниже — это только подсказки, их можно игнорировать.\n\n"
+        "Она будет отвечать сама, флиртовать, задавать вопросы и постепенно открывать новые моменты."
     )
     try:
-        await cb.message.edit_text(text, reply_markup=chat_home_kb(char_id), parse_mode="Markdown")
+        await cb.message.edit_text(text, reply_markup=free_chat_hint_kb(char_id), parse_mode="Markdown")
     except Exception:
         await cb.message.answer(text, reply_markup=chat_home_kb(char_id), parse_mode="Markdown")
     await cb.answer()
@@ -159,29 +160,24 @@ async def on_roleplay_start(cb: CallbackQuery):
     await cb.answer()
 
 
-@router.message(lambda m: bool(m.text) and not m.text.startswith("/"))
-async def on_chat_message(message: Message):
-    user = db.get_or_create_user(message.from_user.id, message.from_user.username)
-    if not user.get("chat_enabled") or not user.get("active_character_id"):
-        return
 
-    char = db.get_character(user["active_character_id"])
-    if not char or char["user_id"] != user["id"]:
-        db.set_active_character(user["id"], None, enabled=False)
-        await message.answer("Диалог сбросился: персонаж не найден. Открой персонажа заново.")
-        return
-
-    text = message.text.strip()
+async def _process_free_chat(message: Message, user: dict, char: dict, text: str, *, from_suggestion: bool = False) -> None:
     try:
         check_prompt(text)
     except ModerationError as e:
         await message.answer(e.reason)
         return
 
-    db.add_chat_message(user["id"], char["id"], "user", text)
+    db.set_active_character(user["id"], char["id"], enabled=True)
+    db.add_chat_message(user["id"], char["id"], "user", text, event_type="suggestion" if from_suggestion else "chat")
+
     delta = relationship_delta(text)
+    # Any meaningful free-text interaction should slowly warm the relationship.
+    if delta == 0 and len(text) >= 12:
+        delta = 1
     score = db.update_relationship(user["id"], delta) if delta else db.get_relationship(user["id"])
-    history = db.get_chat_history(user["id"], char["id"], limit=12)
+
+    history = db.get_chat_history(user["id"], char["id"], limit=16)
     reply = await generate_companion_reply(
         user=user,
         character=char,
@@ -192,10 +188,42 @@ async def on_chat_message(message: Message):
     db.add_chat_message(user["id"], char["id"], "assistant", reply)
 
     intent = detect_intent(text)
-    suffix = f"\n\n💕 Отношения: {score}/100" if delta else ""
-    await message.answer(reply + suffix, reply_markup=chat_home_kb(char["id"]))
+    suffix = f"\n\n💕 Близость: {score}/100" if delta else ""
+    await message.answer(reply + suffix, reply_markup=chat_suggestions_kb(char["id"], score))
 
     if intent == "photo":
         await _send_chat_photo(message, user, char, text)
     elif intent == "video":
-        await message.answer("Она может отправить короткое видео из уже понравившегося момента. Открой кадр и нажми «🎥 Да, хочу видео».")
+        await message.answer("Она улыбается: «Выбери момент, который тебе понравился, и я отправлю его коротким видео».")
+
+
+@router.callback_query(F.data.startswith("chat:suggest:"))
+async def on_chat_suggestion(cb: CallbackQuery):
+    _, _, char_id_str, key = cb.data.split(":")
+    char_id = int(char_id_str)
+    user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
+    user = db.refresh_daily_credits(user)
+    char = db.get_character(char_id)
+    if not char or char["user_id"] != user["id"]:
+        await cb.answer("Персонаж не найден", show_alert=True)
+        return
+    text = suggestion_to_user_text(key)
+    await cb.answer("Она читает…")
+    await cb.message.answer(f"*Ты:* {text}", parse_mode="Markdown")
+    await _process_free_chat(cb.message, user, char, text, from_suggestion=True)
+
+
+@router.message(lambda m: bool(m.text) and not m.text.startswith("/"))
+async def on_chat_message(message: Message):
+    user = db.get_or_create_user(message.from_user.id, message.from_user.username)
+    if not user.get("chat_enabled") or not user.get("active_character_id"):
+        return
+
+    char = db.get_character(user["active_character_id"])
+    if not char or char["user_id"] != user["id"]:
+        db.set_active_character(user["id"], None, enabled=False)
+        await message.answer("Диалог сбросился. Открой героиню заново — и она снова напишет тебе.")
+        return
+
+    text = message.text.strip()
+    await _process_free_chat(message, user, char, text)

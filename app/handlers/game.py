@@ -9,7 +9,7 @@ from app import db
 from app.companion_client import generate_companion_reply
 from app.game_flow import answer_text, build_first_meeting_prompt, first_companion_message, first_meeting_text
 from app.image_client import generate_image
-from app.keyboards import characters_kb, chat_home_kb, first_meeting_kb, main_menu_kb
+from app.keyboards import characters_kb, chat_home_kb, chat_suggestions_kb, first_meeting_kb, main_menu_kb
 from app.moderation import ModerationError, check_prompt
 
 router = Router()
@@ -147,8 +147,8 @@ async def on_first_meeting_answer(cb: CallbackQuery):
     )
     db.add_chat_message(user["id"], char_id, "assistant", reply, event_type="first_meeting_reply")
     await cb.message.answer(
-        f"*Ты:* {user_text}\n\n*{char['name']}:* {reply}\n\n💕 Отношения: *{score}/100*",
-        reply_markup=chat_home_kb(char_id),
+        f"*Ты:* {user_text}\n\n*{char['name']}:* {reply}\n\n💕 Близость: *{score}/100*",
+        reply_markup=chat_suggestions_kb(char_id, score),
         parse_mode="Markdown",
     )
     await cb.answer()
