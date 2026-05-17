@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     # Image model & LoRA — overridable via env (LORA_URL, FAL_MODEL, etc.)
     fal_model: str = "fal-ai/flux-lora"
     lora_url: str = "https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors"
-    lora_scale: float = 0.9
+    # 0.55–0.70 usually gives more diverse faces. 0.9 can make all models too similar.
+    lora_scale: float = 0.62
 
     # Optional Civitai/Civitai.red API token.
     # Keep it ONLY in Railway/Shell env; never commit it to GitHub.
@@ -45,7 +46,10 @@ class Settings(BaseSettings):
     product_shot_model: str = "fal-ai/bria/product-shot"
     product_embed_model: str = "bria/embed-product"
     product_holding_model: str = "fal-ai/image-apps-v2/product-holding"
-    product_composition_mode: str = "strict"  # strict | fusion
+    product_composition_mode: str = "fast"  # fast | strict | fusion | holding
+    product_holding_enabled: bool = False
+    product_embed_enabled: bool = True
+    product_pipeline_timeout_sec: int = 90
     tryon_extra_credits: int = 2
     product_integration_extra_credits: int = 2
 

@@ -8,12 +8,14 @@ from app.factory_catalog import PRODUCT_CATEGORIES
 BASE_PHOTO_STYLE = (
     "premium commercial photography for Instagram ads, realistic high-end influencer content, "
     "editorial lighting, natural skin texture, accurate hands, believable fabric and product materials, "
-    "clean composition, native advertising aesthetic, expensive but authentic, brand-safe, no text artifacts, no watermark"
+    "clean composition, native advertising aesthetic, expensive but authentic, brand-safe, no text artifacts, no watermark, "
+    "high-end e-commerce visual quality, sharp product edges, realistic shadows, premium color grading"
 )
 
 NEGATIVE_STYLE = (
     "avoid: extra fingers, distorted hands, blurry face, duplicate person, strange anatomy, broken product, "
-    "fake text, unreadable label, watermark, logo hallucination, low quality, explicit nudity"
+    "fake text, unreadable label, watermark, logo hallucination, low quality, explicit nudity, "
+    "generic stock woman, same face as other models, face morphing, product redesign, wrong packaging"
 )
 
 
@@ -22,12 +24,29 @@ def persona_text(model: dict) -> str:
     if not isinstance(persona, dict):
         persona = {}
     parts = []
+    labels = {
+        "age": "age range",
+        "hair_color": "hair color",
+        "hair_length": "hair length",
+        "appearance": "appearance type",
+        "style": "style",
+        "niche": "niche",
+    }
     for key in ("age", "hair_color", "hair_length", "appearance", "style", "niche"):
         val = persona.get(key)
         if val:
-            parts.append(f"{key.replace('_', ' ')}: {val}")
-    identity_note = persona.get("identity_note") or "same consistent face, same facial identity across all shots"
-    parts.append(identity_note)
+            parts.append(f"{labels[key]}: {val}")
+
+    # Critical: visual DNA makes models different from each other.
+    dna = persona.get("identity_dna") if isinstance(persona.get("identity_dna"), dict) else {}
+    anchor = dna.get("identity_anchor_en") or persona.get("identity_note")
+    if anchor:
+        parts.append(anchor)
+    else:
+        parts.append("unique non-generic fixed facial identity, same facial proportions in every shot")
+
+    # Repetition helps Flux/LoRA keep identity better.
+    parts.append("do not change the face, do not switch to a default woman, do not make all models look alike")
     return ", ".join(parts)
 
 

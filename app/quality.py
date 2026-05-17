@@ -6,12 +6,13 @@ from app.config import settings
 NEGATIVE_TAIL = (
     "Avoid low quality, plastic skin, distorted fingers, deformed anatomy, duplicate faces, "
     "messy background, fake text, unreadable brand label, warped packaging, watermark, "
-    "over-smoothed skin, noisy jpeg artifacts, explicit nudity."
+    "over-smoothed skin, noisy jpeg artifacts, explicit nudity, generic stock face, same default woman, "
+    "face identity drift, product redesign, fake logo, wrong packaging colors."
 )
 
 SCENE_TAILS = {
-    "portrait": "sharp eyes, real skin pores, premium portrait lens, controlled daylight, high-end model test",
-    "product": "product is visually clear, correct perspective, believable shadows, packaging shape preserved, ad-ready composition",
+    "portrait": "sharp eyes, real skin pores, premium portrait lens, controlled daylight, high-end model test, unique non-generic face, locked facial DNA",
+    "product": "product is visually clear, correct perspective, believable shadows, packaging shape preserved, ad-ready composition, original product reference must be respected",
     "fashion": "full outfit visible, editorial pose, garment shape preserved, fashion lookbook quality",
     "video": "stable face, stable product, subtle natural motion, no morphing, no flicker, commercial social media reel",
 }

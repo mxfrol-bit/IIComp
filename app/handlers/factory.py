@@ -32,6 +32,7 @@ from app.factory_prompts import (
     build_base_scene_for_product_prompt, build_product_integration_prompt, clothing_tryon_category,
 )
 from app.image_client import generate_image
+from app.identity import make_identity_dna
 from app.product_clients import generate_tryon, integrate_product, product_holding, embed_product_strict, product_lifestyle_shot
 from app.moderation import ModerationError, check_prompt
 from app.states import ModelCreation, ProductUpload
@@ -64,6 +65,8 @@ def _model_caption(model: dict) -> str:
     persona = model.get("persona_json") or {}
     fixed = "✅" if model.get("hero_image_url") else "⚠️"
     pack_count = len(model.get("identity_pack_json") or []) if isinstance(model.get("identity_pack_json"), list) else 0
+    dna = persona.get("identity_dna") if isinstance(persona.get("identity_dna"), dict) else {}
+    dna_line = dna.get("identity_anchor_ru") or "уникальный визуальный якорь создан"
     return (
         f"👤 {model['name']}\n\n"
         f"Ниша: {NICHES.get(model.get('niche') or '', model.get('niche') or '—')}\n"
@@ -71,8 +74,9 @@ def _model_caption(model: dict) -> str:
         f"Волосы: {persona.get('hair_color', '—')}, {persona.get('hair_length', '—')}\n"
         f"Типаж: {persona.get('appearance', '—')}\n"
         f"Стиль: {persona.get('style', '—')}\n\n"
-        f"Постоянное лицо: {fixed} hero face\n"
-        f"Identity pack: {pack_count} кадров\n\n"
+        f"Постоянное лицо: {fixed} главный портрет\n"
+        f"Пакет постоянства: {pack_count} кадров\n"
+        f"ДНК лица: {dna_line[:180]}...\n\n"
         "Выбери, какой контент производим."
     )
 
@@ -168,6 +172,8 @@ async def model_niche(cb: CallbackQuery, state: FSMContext):
     user = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
     key = cb.data.split(":", 1)[1]
     data = await state.get_data()
+    seed = random.randint(1, 2_000_000_000)
+    identity_dna = make_identity_dna(data["name"], seed)
     persona = {
         "age": data.get("age"),
         "hair_color": data.get("hair_color"),
@@ -175,15 +181,15 @@ async def model_niche(cb: CallbackQuery, state: FSMContext):
         "appearance": data.get("appearance"),
         "style": data.get("style"),
         "niche": NICHES.get(key, key),
-        "identity_note": "consistent face, same facial identity, same facial proportions, same eyes, same nose, same lips in every future image",
+        "identity_dna": identity_dna,
+        "identity_note": identity_dna.get("identity_anchor_en"),
     }
-    seed = random.randint(1, 2_000_000_000)
     model = db.create_ai_model(user["id"], data["name"], persona, key, seed)
     await state.clear()
 
     placeholder = await cb.message.edit_text(
         f"✅ Модель {model['name']} создана.\n\n"
-        "Сейчас создаю первый hero portrait — он станет лицом модели для будущего контента."
+        "Сейчас создаю главный портрет — он станет лицом модели для будущего контента."
     )
     await cb.answer()
 
@@ -263,7 +269,12 @@ async def model_identity_pack(cb: CallbackQuery):
         await cb.answer("Модель не найдена", show_alert=True)
         return
 
-    views = ["front face portrait", "three quarter face portrait", "profile portrait", "full body neutral model digitals"]
+    views = [
+        "front face portrait with the same unique facial DNA",
+        "three quarter face portrait with the same unique facial DNA",
+        "profile portrait with the same unique facial DNA",
+        "full body neutral model digitals with the same face and proportions",
+    ]
     cost = len(views)
     if not await _spend(user, cost, "identity_pack"):
         await cb.answer(f"Нужно {cost} кредитов для identity pack", show_alert=True)
@@ -278,11 +289,11 @@ async def model_identity_pack(cb: CallbackQuery):
             image_url = await generate_image(prompt=prompt, seed=int(model.get("seed") or random.randint(1, 999999)) + i, aspect_ratio="4:5")
             stored = await db.upload_image_from_url(image_url, f"factory/u{user['id']}/models/m{model_id}/identity_{i}_{int(time.time())}.jpg")
             urls.append(stored)
-            await cb.message.answer_photo(URLInputFile(stored), caption=f"Identity reference {i}/4")
+            await cb.message.answer_photo(URLInputFile(stored), caption=f"Референс лица {i}/4")
         except Exception as e:
             log.warning("Identity ref failed: %s", e)
     db.update_ai_model(model_id, identity_pack_json=urls)
-    await status.edit_text("✅ Identity pack обновлён. Теперь в промптах модель будет фиксироваться как единый образ.", reply_markup=model_card_kb(model_id))
+    await status.edit_text("✅ Пакет постоянства обновлён. Теперь модель будет отличаться от других и держать один образ заметно лучше.", reply_markup=model_card_kb(model_id))
 
 
 @router.callback_query(F.data.startswith("fc:video_model:"))
@@ -549,7 +560,7 @@ async def photo_scenarios(cb: CallbackQuery):
         await cb.answer("Категория не найдена", show_alert=True)
         return
     await cb.message.answer(
-        f"Выбери сценарий: {PHOTO_SCENARIOS[cat_key]['title']}",
+        f"📸 Выбери конкретную сцену: {PHOTO_SCENARIOS[cat_key]['title']}",
         reply_markup=photo_scenarios_kb(model_id, product_id, cat_key),
     )
     await cb.answer()
@@ -592,7 +603,7 @@ async def photo_generate(cb: CallbackQuery):
     if product and product.get("category") == "clothes":
         wait_text = "👗 Сначала делаю базовый кадр модели, потом надеваю загруженную вещь через virtual try-on."
     elif product_mode:
-        wait_text = "📦 Сначала делаю кадр сцены, потом встраиваю загруженный товар с сохранением формы и света."
+        wait_text = "📦 Собираю рекламный кадр с учётом фото товара. Стараюсь сохранить форму, цвет и упаковку."
     else:
         wait_text = "📸 Генерирую рекламный кадр. Обычно 10–30 секунд."
     placeholder = await cb.message.answer(wait_text)
@@ -627,19 +638,20 @@ async def photo_generate(cb: CallbackQuery):
                     "fo_sip", "fo_choco", "be_skin", "be_perfume", "v_pr_hand"
                 }
                 try:
-                    if scenario_key in holding_scenarios:
+                    mode = (settings.product_composition_mode or "fast").lower()
+                    if mode == "holding" and settings.product_holding_enabled and scenario_key in holding_scenarios:
                         provider_url = await product_holding(
                             person_image_url=base_url,
                             product_image_url=product_ref,
                         )
-                    elif settings.product_composition_mode.lower() == "fusion":
+                    elif mode == "fusion":
                         integration_prompt = build_product_integration_prompt(product, scenario)
                         provider_url = await integrate_product(
                             scene_image_url=base_url,
                             product_image_url=product_ref,
                             prompt=integration_prompt,
                         )
-                    else:
+                    elif mode == "strict" and settings.product_embed_enabled:
                         provider_url = await embed_product_strict(
                             scene_image_url=base_url,
                             product_image_url=product_ref,
@@ -647,14 +659,25 @@ async def photo_generate(cb: CallbackQuery):
                             scenario_key=scenario_key,
                             seed=seed,
                         )
+                    else:
+                        # Fast MVP mode: product-first lifestyle shot. It is faster and usually preserves packaging better.
+                        provider_url = await product_lifestyle_shot(
+                            product_image_url=product_ref,
+                            scene_description=(
+                                f"premium Instagram advertising scene inspired by: {scenario['prompt']}; "
+                                f"AI model style nearby or implied: {model['name']}; "
+                                "clean commercial lighting, realistic shadows, high-end product photography, preserve original packaging"
+                            ),
+                            placement="bottom_center",
+                        )
                 except Exception as e:
-                    log.warning("Strict product placement failed; trying product-only shot: %s", e)
+                    log.warning("Product-aware placement failed; trying product-shot fallback: %s", e)
                     try:
                         provider_url = await product_lifestyle_shot(
                             product_image_url=product_ref,
                             scene_description=(
                                 f"premium Instagram advertising scene inspired by: {scenario['prompt']}; "
-                                "clean commercial lighting, realistic shadows, high-end product photography"
+                                "clean commercial lighting, realistic shadows, high-end product photography, preserve original packaging"
                             ),
                             placement="bottom_center",
                         )
@@ -671,7 +694,10 @@ async def photo_generate(cb: CallbackQuery):
         except Exception:
             pass
         fresh = db.get_or_create_user(cb.from_user.id, cb.from_user.username)
-        product_note = "товар использован по фото" if product_mode else "без товара"
+        product_note = (
+            f"товар использован по фото · режим {settings.product_composition_mode}"
+            if product_mode else "без товара"
+        )
         await cb.message.answer_photo(
             URLInputFile(stored),
             caption=(
@@ -696,7 +722,7 @@ async def photo_generate(cb: CallbackQuery):
 @router.callback_query(F.data.startswith("fv:cat:"))
 async def video_cat(cb: CallbackQuery):
     gen_id = int(cb.data.split(":")[-1])
-    await cb.message.answer("🎥 Выбери тип видео:", reply_markup=video_categories_kb(gen_id))
+    await cb.message.answer("🎬 Собираем Reels/видео. Выбери стиль ролика:", reply_markup=video_categories_kb(gen_id))
     await cb.answer()
 
 
@@ -704,21 +730,21 @@ async def video_cat(cb: CallbackQuery):
 async def video_scene(cb: CallbackQuery):
     _, _, gen_id_str, cat_key = cb.data.split(":")
     gen_id = int(gen_id_str)
-    await cb.message.answer("Выбери движение / сценарий:", reply_markup=video_scenarios_kb(gen_id, cat_key))
+    await cb.message.answer("🎥 Выбери движение камеры / действие в кадре:", reply_markup=video_scenarios_kb(gen_id, cat_key))
     await cb.answer()
 
 
 @router.callback_query(F.data.startswith("fv:fmt:"))
 async def video_format(cb: CallbackQuery):
     _, _, gen_id_str, scenario_key = cb.data.split(":")
-    await cb.message.answer("Выбери формат:", reply_markup=video_formats_kb(int(gen_id_str), scenario_key))
+    await cb.message.answer("📐 Куда публикуем? Выбери формат:", reply_markup=video_formats_kb(int(gen_id_str), scenario_key))
     await cb.answer()
 
 
 @router.callback_query(F.data.startswith("fv:dur:"))
 async def video_duration(cb: CallbackQuery):
     _, _, gen_id_str, scenario_key, fmt_key = cb.data.split(":")
-    await cb.message.answer("Выбери длину видео:", reply_markup=video_durations_kb(int(gen_id_str), scenario_key, fmt_key))
+    await cb.message.answer("⏱ Выбери длину видео:", reply_markup=video_durations_kb(int(gen_id_str), scenario_key, fmt_key))
     await cb.answer()
 
 

@@ -1,25 +1,25 @@
-# AI Content Factory Pro v5
+# AI Content Factory Pro v7
 
 Профессиональный Telegram-бот + Web Admin + Telegram Mini App для создания AI-моделей, загрузки товаров и генерации рекламного контента для Instagram/Reels/Ads.
 
-## Что нового в v5
+## Что нового в v7
 
-- новая «бомбическая» навигация: быстрый старт, модели, товары, реклама, Reels, контент-план;
-- Web Admin на том же Railway-сервисе: `/admin?token=...`;
-- Telegram Mini App: `/mini`;
-- улучшенный quality pipeline: `PHOTO_QUALITY_MODE=pro/max`, pro prompt tail, усиленные рекламные промпты;
-- product-aware генерация: одежда через virtual try-on, товары через product integration;
-- кнопка `/admin web` выдаёт ссылку на админку и Mini App;
-- быстрый путь: модель → товар → рекламный кадр.
+- весь пользовательский интерфейс и сценарии переведены на русский;
+- расширены каталоги: больше фото-сцен, видео-сцен, ниш, типажей и категорий товаров;
+- у каждой AI-модели теперь создаётся уникальная «ДНК лица» — лицо меньше повторяется между моделями;
+- LoRA scale по умолчанию снижен до 0.62, чтобы модели не становились одинаковыми;
+- product pipeline стал стабильнее: `fast` по умолчанию, `strict/holding/fusion` включаются отдельно;
+- добавлен таймаут product-aware шагов, чтобы бот не висел на тяжёлых endpoints;
+- качество усилено под продающий Instagram / Reels / Ads контент.
 
 ## Деплой
 
 ```bash
-unzip -o ai-content-factory-pro-v5.zip
+unzip -o ai-content-factory-pro-v7-ru-accuracy.zip
 cd IIComp-pro-v5
 
 git add .
-git commit -m "AI Content Factory Pro v5: admin web, mini app, quality upgrade"
+git commit -m "AI Content Factory Pro v7: RU scenes, identity DNA and stable product pipeline"
 git push
 ```
 
@@ -42,7 +42,7 @@ ANTHROPIC_API_KEY=...
 ```env
 FAL_MODEL=fal-ai/flux-lora
 LORA_URL=https://huggingface.co/strangerzonehf/Flux-Super-Realism-LoRA/resolve/main/super-realism.safetensors
-LORA_SCALE=0.68
+LORA_SCALE=0.62
 ENABLE_SAFETY_CHECKER=true
 ```
 
@@ -66,8 +66,11 @@ Product-aware:
 ```env
 PRODUCT_AWARE_MODE=true
 TRYON_MODEL=fal-ai/fashn/tryon/v1.5
-# strict mode preserves the uploaded product better than creative fusion
-PRODUCT_COMPOSITION_MODE=strict
+# fast — быстрее и стабильнее для MVP; strict — точнее, но дольше; holding — товар в руке; fusion — красиво, но может менять упаковку
+PRODUCT_COMPOSITION_MODE=fast
+PRODUCT_HOLDING_ENABLED=false
+PRODUCT_EMBED_ENABLED=true
+PRODUCT_PIPELINE_TIMEOUT_SEC=90
 PRODUCT_EMBED_MODEL=bria/embed-product
 PRODUCT_HOLDING_MODEL=fal-ai/image-apps-v2/product-holding
 PRODUCT_INTEGRATION_MODEL=fal-ai/qwen-image-edit-plus-lora-gallery/integrate-product
@@ -144,10 +147,11 @@ File size: 100 MB
 ## Product accuracy notes
 
 For clothes/dresses the bot uses virtual try-on.
-For bottles, toothpaste, cosmetics, chocolate and other physical goods the bot now uses strict product-preserving placement first:
+For bottles, toothpaste, cosmetics, chocolate and other physical goods the bot now supports multiple product-preserving modes:
 
-1. `fal-ai/image-apps-v2/product-holding` — exact product in hands.
-2. `bria/embed-product` — exact product embedded into a generated scene by coordinates.
-3. `fal-ai/bria/product-shot` — product-first commercial fallback.
+- `PRODUCT_COMPOSITION_MODE=fast` — быстрый product-shot, лучший старт для MVP.
+- `PRODUCT_COMPOSITION_MODE=strict` — вставка товара в сцену через координаты.
+- `PRODUCT_COMPOSITION_MODE=holding` + `PRODUCT_HOLDING_ENABLED=true` — товар в руках модели.
+- `PRODUCT_COMPOSITION_MODE=fusion` — креативная интеграция, но может менять упаковку.
 
-`PRODUCT_COMPOSITION_MODE=fusion` can be used for more creative images, but it may redraw labels or change packaging. For real advertising keep `strict`.
+Для продажи сначала держи `fast`, для точных тестов упаковки — `strict`, для товара в руках — `holding`.

@@ -11,6 +11,7 @@ Therefore non-clothes product flow defaults to BRIA strict placement:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Any
@@ -21,6 +22,14 @@ from app.config import settings
 
 log = logging.getLogger(__name__)
 os.environ["FAL_KEY"] = settings.fal_key
+
+
+async def _subscribe_with_timeout(model: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    timeout = max(30, int(getattr(settings, "product_pipeline_timeout_sec", 90) or 90))
+    return await asyncio.wait_for(
+        fal_client.subscribe_async(model, arguments=arguments, with_logs=False),
+        timeout=timeout,
+    )
 
 
 def _first_image_url(result: dict[str, Any]) -> str:
@@ -61,11 +70,7 @@ async def generate_tryon(
     }
     log.info("fal.ai try-on: model=%s category=%s", settings.tryon_model, category)
     try:
-        result = await fal_client.subscribe_async(
-            settings.tryon_model,
-            arguments=arguments,
-            with_logs=False,
-        )
+        result = await _subscribe_with_timeout(settings.tryon_model, arguments)
     except Exception as e:
         log.exception("fal.ai try-on failed")
         raise RuntimeError(f"try-on error: {str(e)[:300]}") from e
@@ -87,11 +92,7 @@ async def product_holding(
     }
     log.info("fal.ai product holding: model=%s", settings.product_holding_model)
     try:
-        result = await fal_client.subscribe_async(
-            settings.product_holding_model,
-            arguments=arguments,
-            with_logs=False,
-        )
+        result = await _subscribe_with_timeout(settings.product_holding_model, arguments)
     except Exception as e:
         log.exception("fal.ai product holding failed")
         raise RuntimeError(f"product holding error: {str(e)[:300]}") from e
@@ -171,11 +172,7 @@ async def embed_product_strict(
 
     log.info("fal.ai BRIA embed product: model=%s coords=%s", settings.product_embed_model, coords)
     try:
-        result = await fal_client.subscribe_async(
-            settings.product_embed_model,
-            arguments=arguments,
-            with_logs=False,
-        )
+        result = await _subscribe_with_timeout(settings.product_embed_model, arguments)
     except Exception as e:
         log.exception("fal.ai product embed failed")
         raise RuntimeError(f"product embed error: {str(e)[:300]}") from e
@@ -200,11 +197,7 @@ async def integrate_product(
     }
     log.info("fal.ai product integrate/fusion: model=%s", settings.product_integration_model)
     try:
-        result = await fal_client.subscribe_async(
-            settings.product_integration_model,
-            arguments=arguments,
-            with_logs=False,
-        )
+        result = await _subscribe_with_timeout(settings.product_integration_model, arguments)
     except Exception as e:
         log.exception("fal.ai product integration failed")
         raise RuntimeError(f"product integration error: {str(e)[:300]}") from e
@@ -231,11 +224,7 @@ async def product_lifestyle_shot(
     }
     log.info("fal.ai Bria product shot: model=%s", settings.product_shot_model)
     try:
-        result = await fal_client.subscribe_async(
-            settings.product_shot_model,
-            arguments=arguments,
-            with_logs=False,
-        )
+        result = await _subscribe_with_timeout(settings.product_shot_model, arguments)
     except Exception as e:
         log.exception("fal.ai product shot failed")
         raise RuntimeError(f"product shot error: {str(e)[:300]}") from e
